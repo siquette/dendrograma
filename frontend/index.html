@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXAS Analytics</title>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style>
+        /* ============================================
+           NEXAS Analytics — Sistema de Temas
+           ============================================ */
+        [data-theme="dark"] {
+            --bg-primary: #0A1628;
+            --bg-secondary: rgba(255, 255, 255, 0.02);
+            --bg-tertiary: rgba(255, 255, 255, 0.03);
+            --bg-input: rgba(255, 255, 255, 0.06);
+            --bg-contexto: rgba(46, 107, 158, 0.12);
+            --border-primary: rgba(255, 255, 255, 0.06);
+            --border-secondary: rgba(255, 255, 255, 0.08);
+            --border-input: rgba(255, 255, 255, 0.12);
+            --border-accent: #2E6B9E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #E8ECF1;
+            --text-muted: #8BA5BC;
+            --text-faint: #6B8299;
+            --text-placeholder: #4A6A85;
+            --accent: #E8873D;
+            --accent-hover: rgba(232, 135, 61, 0.4);
+            --link-structure: #2E6B9E;
+            --toggle-bg: rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #F4F6F9;
+            --bg-secondary: #FFFFFF;
+            --bg-tertiary: #FFFFFF;
+            --bg-input: #FFFFFF;
+            --bg-contexto: rgba(46, 107, 158, 0.06);
+            --border-primary: #E2E6EC;
+            --border-secondary: #E8ECF0;
+            --border-input: #D0D6DE;
+            --border-accent: #2E6B9E;
+            --text-primary: #1A2332;
+            --text-secondary: #2D3E50;
+            --text-muted: #5A6F82;
+            --text-faint: #7A8D9E;
+            --text-placeholder: #9AACBB;
+            --accent: #D47530;
+            --accent-hover: rgba(212, 117, 48, 0.15);
+            --link-structure: #2E6B9E;
+            --toggle-bg: rgba(0, 0, 0, 0.06);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 20px 32px;
+            border-bottom: 1px solid var(--border-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 { font-size: 20px; font-weight: 600; color: var(--text-primary); letter-spacing: 1.2px; }
+        .header-controls { display: flex; align-items: center; gap: 12px; }
+
+        .header .onda-selector {
+            background: var(--bg-input);
+            border: 1px solid var(--border-input);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .theme-toggle {
+            background: var(--toggle-bg);
+            border: 1px solid var(--border-input);
+            border-radius: 8px;
+            padding: 7px 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .top-panel { padding: 16px 32px; display: flex; flex-direction: column; gap: 16px; }
+        .filtros { display: flex; gap: 16px; flex-wrap: wrap; }
+
+        .filtros select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-input);
+            color: var(--text-secondary);
+            padding: 10px 16px;
+            border-radius: 6px;
+            min-width: 220px;
+        }
+
+        .viz-container { flex: 1; padding: 0 32px 20px 32px; display: flex; overflow: hidden; }
+        .viz-full { flex: 1; background: var(--bg-secondary); border: 1px solid var(--border-primary); border-radius: 12px; overflow: auto; position: relative; }
+        .viz-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text-placeholder); font-size: 14px; text-align: center; }
+
+        .metricas { padding: 16px 32px; background: var(--bg-tertiary); border-top: 1px solid var(--border-primary); display: flex; gap: 32px; }
+        .metrica-item { text-align: center; }
+        .metrica-item .valor { font-size: 20px; font-weight: 700; color: var(--text-primary); }
+        .metrica-item .label { font-size: 11px; color: var(--text-faint); margin-top: 4px; text-transform: uppercase; }
+        .valor.accent { color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>NEXAS ANALYTICS</h1>
+        <div class="header-controls">
+            <select id="onda-select" class="onda-selector">
+                <option value="">Carregando ondas...</option>
+            </select>
+            <button class="theme-toggle" id="theme-toggle"><span class="toggle-icon">☀️</span></button>
+        </div>
+    </div>
+
+    <div class="top-panel">
+        <div class="filtros">
+            <select id="assunto-select" disabled><option value="">Selecione o assunto</option></select>
+            <select id="pergunta-select" disabled><option value="">Selecione a pergunta</option></select>
+            <select id="direcao-select">
+                <option value="">Todas as direções</option>
+                <option value="DRIVER">Drivers</option>
+                <option value="ANTI-DRIVER">Anti-drivers</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="viz-container">
+        <div class="viz-full" id="tree-container">
+            <div class="viz-placeholder" id="placeholder">
+                Selecione uma onda e um cruzamento nos filtros acima<br>para gerar o Dendrograma Colapsável.
+            </div>
+        </div>
+    </div>
+
+    <div class="metricas" id="metricas-container">
+        <div class="metrica-item"><div class="valor" id="met-total">—</div><div class="label">Cruzamentos</div></div>
+        <div class="metrica-item"><div class="valor accent" id="met-drivers">—</div><div class="label">Drivers</div></div>
+        <div class="metrica-item"><div class="valor" id="met-anti">—</div><div class="label">Anti-drivers</div></div>
+        <div class="metrica-item"><div class="valor" id="met-top-score">—</div><div class="label">Top Score</div></div>
+    </div>
+
+<script>
+    const API_BASE = '/api';
+    const state = { onda: null, assunto: null, pergunta: null, direcao: null, treeData: null };
+
+    // --- Core API ---
+    async function fetchJSON(endpoint, params = {}) {
+        const url = new URL(endpoint, window.location.origin);
+        Object.entries(params).forEach(([k, v]) => { 
+            if (v !== null && v !== undefined) url.searchParams.set(k, v); 
+        });
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`API error: ${resp.status}`);
+        return resp.json();
+    }
+
+    // --- Temas ---
+    function initTheme() {
+        const saved = localStorage.getItem('nexas-theme') || 'dark';
+        applyTheme(saved);
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+            localStorage.setItem('nexas-theme', next);
+            if (state.treeData) renderCollapsibleTree(state.treeData.tree);
+        });
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.querySelector('.toggle-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+
+    // --- Lógica de Visualização ---
+    async function loadVisualizacoes() {
+        if (!state.onda || !state.assunto || !state.pergunta) return;
+        const params = { onda: state.onda, assunto: state.assunto, pergunta: state.pergunta, direcao: state.direcao };
+        try {
+            const [treeData, metricas] = await Promise.all([
+                fetchJSON(`${API_BASE}/tree`, params),
+                fetchJSON(`${API_BASE}/metricas`, params),
+            ]);
+            state.treeData = treeData;
+            document.getElementById('met-total').textContent = metricas.total_cruzamentos.toLocaleString();
+            document.getElementById('met-drivers').textContent = metricas.total_drivers.toLocaleString();
+            document.getElementById('met-anti').textContent = metricas.total_anti_drivers.toLocaleString();
+            document.getElementById('met-top-score').textContent = metricas.top_score.toFixed(1);
+
+            const placeholder = document.getElementById('placeholder');
+            if (placeholder) placeholder.style.display = 'none';
+
+            renderCollapsibleTree(treeData.tree);
+        } catch (e) { console.error('Erro na visualização:', e); }
+    }
+
+    // --- Eventos ---
+    async function init() {
+        initTheme();
+        try {
+            const ondas = await fetchJSON(`${API_BASE}/ondas`);
+            const select = document.getElementById('onda-select');
+            select.innerHTML = '<option value="">Selecione a onda</option>';
+            ondas.forEach(o => {
+                const opt = document.createElement('option');
+                opt.value = o.codigo;
+                opt.textContent = `${o.codigo} (${o.total_registros?.toLocaleString()} registros)`;
+                select.appendChild(opt);
+            });
+            select.addEventListener('change', onOndaChange);
+        } catch (e) { console.error('Erro ao carregar ondas:', e); }
+    }
+
+    async function onOndaChange(e) {
+        state.onda = e.target.value;
+        if (!state.onda) return;
+        const filtros = await fetchJSON(`${API_BASE}/filtros`, { onda: state.onda });
+        const subSelect = document.getElementById('assunto-select');
+        subSelect.innerHTML = '<option value="">Selecione o assunto</option>';
+        filtros.assuntos.forEach(a => {
+            const opt = document.createElement('option');
+            opt.value = a; opt.textContent = a;
+            subSelect.appendChild(opt);
+        });
+        subSelect.disabled = false;
+        subSelect.dataset.perguntas = JSON.stringify(filtros.perguntas);
+        subSelect.addEventListener('change', onAssuntoChange);
+    }
+
+    function onAssuntoChange(e) {
+        state.assunto = e.target.value;
+        const perguntas = JSON.parse(e.target.dataset.perguntas);
+        const pSelect = document.getElementById('pergunta-select');
+        pSelect.innerHTML = '<option value="">Selecione a pergunta</option>';
+        (perguntas[state.assunto] || []).forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p; opt.textContent = p;
+            pSelect.appendChild(opt);
+        });
+        pSelect.disabled = false;
+        pSelect.addEventListener('change', (ev) => {
+            state.pergunta = ev.target.value;
+            loadVisualizacoes();
+        });
+    }
+
+    document.getElementById('direcao-select').addEventListener('change', (e) => {
+        state.direcao = e.target.value || null;
+        if (state.pergunta) loadVisualizacoes();
+    });
+
+    // --- D3.js Tree ---
+    function renderCollapsibleTree(data) {
+        const container = document.getElementById("tree-container");
+        d3.select("#tree-container").selectAll("svg").remove();
+
+        const margin = {top: 40, right: 120, bottom: 40, left: 150};
+        const dx = 35, dy = 320;
+        const svg = d3.select("#tree-container").append("svg").attr("class", "tree-svg");
+        const gLink = svg.append("g").attr("fill", "none").attr("stroke-opacity", 0.5).attr("stroke-width", 1.5);
+        const gNode = svg.append("g").attr("cursor", "pointer").attr("pointer-events", "all");
+
+        const root = d3.hierarchy(data);
+        root.x0 = dy / 2; root.y0 = 0;
+        root.descendants().forEach((d, i) => {
+            d.id = i; d._children = d.children;
+            if (d.depth >= 1) d.children = null; 
+        });
+
+        const tree = d3.tree().nodeSize([dx, dy]);
+        const diagonal = d3.linkHorizontal().x(d => d.y).y(d => d.x);
+
+        function update(source) {
+            const nodes = root.descendants().reverse();
+            const links = root.links();
+            tree(root);
+            let left = root, right = root;
+            root.eachBefore(node => { if (node.x < left.x) left = node; if (node.x > right.x) right = node; });
+            const height = right.x - left.x + margin.top + margin.bottom;
+            const transition = svg.transition().duration(250)
+                .attr("height", height)
+                .attr("width", (root.height + 1) * dy + margin.left + margin.right)
+                .attr("viewBox", [-margin.left, left.x - margin.top, (root.height + 1) * dy + margin.left + margin.right, height]);
+
+            const node = gNode.selectAll("g").data(nodes, d => d.id);
+            const nodeEnter = node.enter().append("g")
+                .attr("transform", d => `translate(${source.y0},${source.x0})`)
+                .attr("fill-opacity", 0).attr("stroke-opacity", 0)
+                .on("click", (event, d) => { d.children = d.children ? null : d._children; update(d); });
+
+            nodeEnter.append("circle").attr("r", 5)
+                .attr("fill", d => d._children ? "var(--accent)" : "var(--bg-primary)")
+                .attr("stroke", d => d.data.metrics?.score_nexas > 1.2 ? "var(--accent)" : "var(--link-structure)").attr("stroke-width", 2);
+
+            nodeEnter.append("text").attr("dy", "0.31em").attr("x", d => d._children ? -8 : 8).attr("text-anchor", d => d._children ? "end" : "start")
+                .text(d => {
+                    const label = d.data.name;
+                    const score = d.data.metrics?.score_nexas || d.data.metrics?.avg_score;
+                    return score ? `${label} (${score.toFixed(1)})` : label;
+                }).style("fill", "var(--text-secondary)")
+                .clone(true).lower().attr("stroke-linejoin", "round").attr("stroke-width", 3).attr("stroke", "var(--bg-primary)");
+
+            node.merge(nodeEnter).transition(transition).attr("transform", d => `translate(${d.y},${d.x})`).attr("fill-opacity", 1).attr("stroke-opacity", 1);
+            node.merge(nodeEnter).select("circle").attr("fill", d => d.children ? "var(--bg-primary)" : d._children ? "var(--accent)" : "var(--bg-primary)");
+            node.exit().transition(transition).remove().attr("transform", d => `translate(${source.y},${source.x})`).attr("fill-opacity", 0).attr("stroke-opacity", 0);
+
+            const link = gLink.selectAll("path").data(links, d => d.target.id);
+            const linkEnter = link.enter().append("path").attr("d", d => { const o = {x: source.x0, y: source.y0}; return diagonal({source: o, target: o}); })
+                .attr("stroke", d => (d.target.data.metrics?.score_nexas || 0) > 1.2 ? "var(--accent)" : "var(--link-structure)");
+            link.merge(linkEnter).transition(transition).attr("d", diagonal);
+            link.exit().transition(transition).remove().attr("d", d => { const o = {x: source.x, y: source.y}; return diagonal({source: o, target: o}); });
+            root.eachBefore(d => { d.x0 = d.x; d.y0 = d.y; });
+        }
+        update(root);
+    }
+
+    init();
+</script>
+</body>
+</html>
