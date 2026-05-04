@@ -1,0 +1,50 @@
+# ============================================
+# NEXAS Analytics — Docker Compose
+#
+# Subir tudo:  docker-compose up
+# Subir em background:  docker-compose up -d
+# Parar:  docker-compose down
+# Ver logs:  docker-compose logs -f app
+# ============================================
+
+services:
+  # --- Banco de dados ---
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: nexas
+      POSTGRES_USER: nexas
+      POSTGRES_PASSWORD: nexas_dev_2026
+    volumes:
+      # Dados persistem entre restarts
+      - pgdata:/var/lib/postgresql/data
+      # Roda o SQL de criação de tabelas no primeiro boot
+      - ./migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexas"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- Aplicação ---
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://nexas:nexas_dev_2026@db:5432/nexas
+      APP_ENV: development
+    ports:
+      - "8000:8000"
+    volumes:
+      # Hot reload: edita o código localmente e o container reflete
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+    depends_on:
+      db:
+        condition: service_healthy
+    # Em dev, usa --reload pra reiniciar quando o código muda
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  pgdata:

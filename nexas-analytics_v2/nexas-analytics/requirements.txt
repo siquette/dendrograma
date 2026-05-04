@@ -1,0 +1,33 @@
+# ============================================
+# NEXAS Analytics — Dependências Python
+# Instalar com: pip install -r requirements.txt
+# ============================================
+
+# API
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Banco de dados
+sqlalchemy==2.0.36
+
+# PostgreSQL (só precisa instalar quando migrar pra produção)
+# psycopg2-binary==2.9.10
+# asyncpg==0.30.0
+
+# SQLite já vem embutido no Python — zero instalação
+
+# Validação de dados
+pydantic==2.10.3
+pydantic-settings==2.7.0
+
+# Manipulação de dados
+pandas==2.2.3
+openpyxl==3.1.5
+
+# Utilitários
+python-dotenv==1.0.1
+python-multipart==0.0.20
+
+# Testes
+pytest==8.3.4
+httpx==0.28.1

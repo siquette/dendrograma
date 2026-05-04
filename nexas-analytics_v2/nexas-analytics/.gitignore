@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+
+# Variáveis de ambiente (contêm senhas)
+.env
+
+# Dados de cliente (nunca vão pro Git)
+dados/*.xlsx
+dados/*.csv
+!dados/.gitkeep
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/

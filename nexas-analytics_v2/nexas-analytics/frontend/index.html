@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXAS Analytics</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style>
+        /* ============================================
+           TEMA DARK
+           ============================================ */
+        [data-theme="dark"] {
+            --bg-primary: #0A1628;
+            --bg-card: rgba(255,255,255,0.02);
+            --bg-input: rgba(255,255,255,0.06);
+            --bg-contexto: rgba(46,107,158,0.12);
+            --bg-tooltip: rgba(10,22,40,0.95);
+            --border: rgba(255,255,255,0.06);
+            --border-input: rgba(255,255,255,0.12);
+            --border-accent: #2E6B9E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #E8ECF1;
+            --text-muted: #8BA5BC;
+            --text-faint: #6B8299;
+            --text-placeholder: #4A6A85;
+            --accent: #E8873D;
+            --accent-hover: rgba(232,135,61,0.4);
+            --node-fill: #1A2E44;
+            --node-has-children: #2E6B9E;
+            --node-stroke: #2E6B9E;
+            --link-color: rgba(46,107,158,0.4);
+            --driver-forte: #E8873D;
+            --driver-relevante: #D4A06A;
+            --driver-moderado: #8BA5BC;
+            --anti-driver: #5B7FA3;
+            --baixa-relevancia: #3D5A73;
+            --toggle-bg: rgba(255,255,255,0.08);
+        }
+
+        /* ============================================
+           TEMA LIGHT
+           ============================================ */
+        [data-theme="light"] {
+            --bg-primary: #F4F6F9;
+            --bg-card: #FFFFFF;
+            --bg-input: #FFFFFF;
+            --bg-contexto: rgba(46,107,158,0.06);
+            --bg-tooltip: rgba(255,255,255,0.97);
+            --border: #E2E6EC;
+            --border-input: #D0D6DE;
+            --border-accent: #2E6B9E;
+            --text-primary: #1A2332;
+            --text-secondary: #2D3E50;
+            --text-muted: #5A6F82;
+            --text-faint: #7A8D9E;
+            --text-placeholder: #9AACBB;
+            --accent: #D47530;
+            --accent-hover: rgba(212,117,48,0.15);
+            --node-fill: #FFFFFF;
+            --node-has-children: #D0E4F2;
+            --node-stroke: #2E6B9E;
+            --link-color: rgba(46,107,158,0.25);
+            --driver-forte: #D47530;
+            --driver-relevante: #B8884A;
+            --driver-moderado: #5A6F82;
+            --anti-driver: #3A6B94;
+            --baixa-relevancia: #9AACBB;
+            --toggle-bg: rgba(0,0,0,0.06);
+        }
+
+        /* ============================================
+           LAYOUT
+           ============================================ */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .header {
+            padding: 20px 32px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: 1.2px;
+        }
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        select, .theme-toggle {
+            background: var(--bg-input);
+            border: 1px solid var(--border-input);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        select:hover, .theme-toggle:hover { border-color: var(--accent); }
+        select:focus { outline: none; border-color: var(--accent); }
+        select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .toggle-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        .contexto {
+            margin: 20px 32px;
+            padding: 16px 24px;
+            background: var(--bg-contexto);
+            border-left: 3px solid var(--border-accent);
+            border-radius: 0 8px 8px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+        .contexto strong { color: var(--text-primary); }
+
+        .filtros {
+            padding: 16px 32px;
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .filtros select { min-width: 220px; }
+
+        /* --- Dendrograma (largura total) --- */
+        .viz-dendrograma {
+            margin: 20px 32px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            overflow: auto;
+            min-height: 400px;
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .viz-placeholder {
+            color: var(--text-placeholder);
+            font-size: 14px;
+            text-align: center;
+            padding: 100px 0;
+        }
+
+        /* --- Métricas --- */
+        .metricas {
+            margin: 20px 32px;
+            padding: 16px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            gap: 32px;
+            transition: background 0.3s;
+        }
+        .metrica-item { text-align: center; }
+        .metrica-item .valor {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .metrica-item .label {
+            font-size: 12px;
+            color: var(--text-faint);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .driver-forte { color: var(--driver-forte); }
+        .anti-driver { color: var(--anti-driver); }
+
+        /* --- D3 Tree styles --- */
+        .node circle {
+            stroke: var(--node-stroke);
+            stroke-width: 2px;
+            cursor: pointer;
+            transition: fill 0.2s;
+        }
+        .node text {
+            font: 12px 'Segoe UI', system-ui, sans-serif;
+            fill: var(--text-secondary);
+        }
+        .node--leaf text {
+            font-size: 11px;
+            fill: var(--text-muted);
+        }
+        .link {
+            fill: none;
+            stroke: var(--link-color);
+            stroke-width: 1.5px;
+        }
+
+        /* --- Tooltip --- */
+        .tooltip {
+            position: absolute;
+            background: var(--bg-tooltip);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 13px;
+            line-height: 1.6;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            max-width: 350px;
+            z-index: 1000;
+        }
+        .tooltip .tip-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .tooltip .tip-row { color: var(--text-muted); }
+        .tooltip .tip-row span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>NEXAS ANALYTICS</h1>
+        <div class="header-controls">
+            <select id="onda-select">
+                <option value="">Carregando ondas...</option>
+            </select>
+            <button class="theme-toggle" id="theme-toggle">
+                <span class="toggle-icon">☀️</span>
+                <span class="toggle-label">Tema</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="contexto" id="contexto">
+        Selecione uma onda e um cruzamento para iniciar a análise.
+    </div>
+
+    <div class="filtros">
+        <select id="assunto-select" disabled>
+            <option value="">Assunto</option>
+        </select>
+        <select id="pergunta-select" disabled>
+            <option value="">Pergunta / Indicador</option>
+        </select>
+        <select id="direcao-select">
+            <option value="">Todas as direções</option>
+            <option value="DRIVER">Drivers</option>
+            <option value="ANTI-DRIVER">Anti-drivers</option>
+        </select>
+    </div>
+
+    <div class="viz-dendrograma" id="dendrograma-container">
+        <div class="viz-placeholder">
+            Dendrograma aparecerá aqui após selecionar o cruzamento
+        </div>
+    </div>
+
+    <div class="metricas" id="metricas-container">
+        <div class="metrica-item">
+            <div class="valor" id="met-total">—</div>
+            <div class="label">Cruzamentos</div>
+        </div>
+        <div class="metrica-item">
+            <div class="valor driver-forte" id="met-drivers">—</div>
+            <div class="label">Drivers</div>
+        </div>
+        <div class="metrica-item">
+            <div class="valor anti-driver" id="met-anti">—</div>
+            <div class="label">Anti-drivers</div>
+        </div>
+        <div class="metrica-item">
+            <div class="valor" id="met-top-score">—</div>
+            <div class="label">Top Score</div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+    // ============================================
+    // NEXAS Analytics — Collapsible Tree + Filtros
+    // ============================================
+
+    const API_BASE = '/api';
+    const state = { onda: null, assunto: null, pergunta: null, direcao: null, treeData: null };
+
+    // ===================== TEMA =====================
+
+    function initTheme() {
+        const saved = localStorage.getItem('nexas-theme') || 'dark';
+        applyTheme(saved);
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+            localStorage.setItem('nexas-theme', next);
+            // Re-renderizar a árvore com as novas cores
+            if (state.treeData) renderTree(state.treeData.tree);
+        });
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.querySelector('.toggle-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+
+    function css(varName) {
+        return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    }
+
+    // ===================== FETCH =====================
+
+    async function fetchJSON(endpoint, params = {}) {
+        const url = new URL(endpoint, window.location.origin);
+        Object.entries(params).forEach(([k, v]) => { if (v) url.searchParams.set(k, v); });
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`API ${resp.status}`);
+        return resp.json();
+    }
+
+    // ===================== INIT =====================
+
+    async function init() {
+        initTheme();
+        try {
+            const ondas = await fetchJSON(`${API_BASE}/ondas`);
+            const sel = document.getElementById('onda-select');
+            sel.innerHTML = '<option value="">Selecione a onda</option>';
+            ondas.forEach(o => {
+                const opt = document.createElement('option');
+                opt.value = o.codigo;
+                opt.textContent = `${o.codigo} (${o.total_registros?.toLocaleString()} reg.)`;
+                sel.appendChild(opt);
+            });
+            sel.addEventListener('change', onOndaChange);
+        } catch (e) {
+            console.error(e);
+            document.getElementById('contexto').textContent =
+                'Erro ao conectar com a API. Verifique se o servidor está rodando (uvicorn backend.main:app --reload).';
+        }
+    }
+
+    // ===================== FILTROS =====================
+
+    async function onOndaChange(e) {
+        state.onda = e.target.value;
+        if (!state.onda) return;
+        const filtros = await fetchJSON(`${API_BASE}/filtros`, { onda: state.onda });
+        const sel = document.getElementById('assunto-select');
+        sel.innerHTML = '<option value="">Selecione o assunto</option>';
+        filtros.assuntos.forEach(a => {
+            const opt = document.createElement('option');
+            opt.value = a; opt.textContent = a;
+            sel.appendChild(opt);
+        });
+        sel.disabled = false;
+        sel.dataset.perguntas = JSON.stringify(filtros.perguntas);
+        sel.addEventListener('change', onAssuntoChange);
+    }
+
+    async function onAssuntoChange(e) {
+        state.assunto = e.target.value;
+        if (!state.assunto) return;
+        const perguntas = JSON.parse(e.target.dataset.perguntas);
+        const sel = document.getElementById('pergunta-select');
+        sel.innerHTML = '<option value="">Selecione a pergunta</option>';
+        (perguntas[state.assunto] || []).forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p; opt.textContent = p;
+            sel.appendChild(opt);
+        });
+        sel.disabled = false;
+        sel.addEventListener('change', onPerguntaChange);
+    }
+
+    async function onPerguntaChange(e) {
+        state.pergunta = e.target.value;
+        if (!state.pergunta) return;
+        state.direcao = document.getElementById('direcao-select').value || null;
+        await loadVisualizacoes();
+    }
+
+    document.getElementById('direcao-select').addEventListener('change', () => {
+        state.direcao = document.getElementById('direcao-select').value || null;
+        if (state.pergunta) loadVisualizacoes();
+    });
+
+    // ===================== CARREGAR DADOS =====================
+
+    async function loadVisualizacoes() {
+        const params = {
+            onda: state.onda, assunto: state.assunto,
+            pergunta: state.pergunta, direcao: state.direcao,
+        };
+        try {
+            const [treeData, metricas] = await Promise.all([
+                fetchJSON(`${API_BASE}/tree`, params),
+                fetchJSON(`${API_BASE}/metricas`, params),
+            ]);
+            state.treeData = treeData;
+
+            document.getElementById('contexto').innerHTML =
+                `Análise do assunto: <strong>${treeData.contexto.assunto_coluna}</strong>. ` +
+                `Variáveis associadas a: <strong>${treeData.contexto.pergunta_coluna}</strong>.` +
+                (state.direcao ? ` Filtro: <strong>${state.direcao}</strong>.` : '');
+
+            document.getElementById('met-total').textContent = metricas.total_cruzamentos.toLocaleString();
+            document.getElementById('met-drivers').textContent = metricas.total_drivers.toLocaleString();
+            document.getElementById('met-anti').textContent = metricas.total_anti_drivers.toLocaleString();
+            document.getElementById('met-top-score').textContent = metricas.top_score.toFixed(1);
+
+            renderTree(treeData.tree);
+
+        } catch (e) {
+            console.error('Erro:', e);
+            document.getElementById('dendrograma-container').innerHTML =
+                '<div class="viz-placeholder">Erro ao carregar dados. Verifique o console.</div>';
+        }
+    }
+
+    // ============================================================
+    // D3 COLLAPSIBLE TREE
+    // Baseado em: https://observablehq.com/@d3/collapsible-tree
+    //             https://gist.github.com/d3noob/918a64abe4c3682cac3b4c3c852a698d
+    // ============================================================
+
+    let treeNodeId = 0;
+    const duration = 500;
+    const tooltip = document.getElementById('tooltip');
+
+    function renderTree(data) {
+        const container = document.getElementById('dendrograma-container');
+        container.innerHTML = '';
+        treeNodeId = 0;
+
+        // Calcular tamanho dinâmico baseado no volume de dados
+        const countLeaves = (node) => {
+            if (!node.children || node.children.length === 0) return 1;
+            return node.children.reduce((sum, c) => sum + countLeaves(c), 0);
+        };
+        const totalLeaves = countLeaves(data);
+
+        // Dimensões: altura proporcional ao número de leaves
+        const margin = { top: 20, right: 250, bottom: 20, left: 200 };
+        const rowHeight = 22;
+        const height = Math.max(500, totalLeaves * rowHeight);
+        const width = container.clientWidth - margin.left - margin.right;
+        const levelSpacing = Math.min(250, width / 5);
+
+        const svg = d3.select(container).append('svg')
+            .attr('width', width + margin.left + margin.right)
+            .attr('height', height + margin.top + margin.bottom);
+
+        const g = svg.append('g')
+            .attr('transform', `translate(${margin.left},${margin.top})`);
+
+        // Layout
+        const treemap = d3.tree().size([height, width]);
+
+        // Criar hierarquia D3
+        const root = d3.hierarchy(data, d => d.children);
+        root.x0 = height / 2;
+        root.y0 = 0;
+
+        // Colapsar tudo abaixo do nível 1 (CATEGORIA_COLUNA fica visível)
+        if (root.children) {
+            root.children.forEach(child => {
+                if (child.children) {
+                    child.children.forEach(collapse);
+                }
+            });
+        }
+
+        update(root);
+
+        function collapse(d) {
+            if (d.children) {
+                d._children = d.children;
+                d._children.forEach(collapse);
+                d.children = null;
+            }
+        }
+
+        function update(source) {
+            const treeDataLayout = treemap(root);
+            const nodes = treeDataLayout.descendants();
+            const links = treeDataLayout.descendants().slice(1);
+
+            // Espaçamento horizontal por nível
+            nodes.forEach(d => { d.y = d.depth * levelSpacing; });
+
+            // ========== NÓS ==========
+            const node = g.selectAll('g.node')
+                .data(nodes, d => d.id || (d.id = ++treeNodeId));
+
+            const nodeEnter = node.enter().append('g')
+                .attr('class', d => 'node' + (d.data.leaf ? ' node--leaf' : ''))
+                .attr('transform', `translate(${source.y0},${source.x0})`)
+                .on('click', (event, d) => {
+                    // Toggle expand/collapse
+                    if (d.children) {
+                        d._children = d.children;
+                        d.children = null;
+                    } else {
+                        d.children = d._children;
+                        d._children = null;
+                    }
+                    update(d);
+                })
+                .on('mouseover', (event, d) => showTooltip(event, d))
+                .on('mouseout', () => hideTooltip());
+
+            // Círculo do nó
+            nodeEnter.append('circle')
+                .attr('r', 1e-6)
+                .style('fill', d => nodeColor(d));
+
+            // Label do nó
+            nodeEnter.append('text')
+                .attr('dy', '.35em')
+                .attr('x', d => (d.children || d._children) ? -14 : 14)
+                .attr('text-anchor', d => (d.children || d._children) ? 'end' : 'start')
+                .text(d => truncate(d.data.name, 50))
+                .style('fill', css('--text-secondary'));
+
+            // Score badge nos leaves
+            nodeEnter.filter(d => d.data.leaf && d.data.metrics)
+                .append('text')
+                .attr('class', 'score-badge')
+                .attr('dy', '.35em')
+                .attr('x', d => 14 + measureText(truncate(d.data.name, 50)) + 8)
+                .style('fill', d => scoreColor(d.data.metrics))
+                .style('font-size', '10px')
+                .style('font-weight', '600')
+                .text(d => `${d.data.metrics.score_nexas.toFixed(1)}`);
+
+            // UPDATE
+            const nodeUpdate = nodeEnter.merge(node);
+
+            nodeUpdate.transition().duration(duration)
+                .attr('transform', d => `translate(${d.y},${d.x})`);
+
+            nodeUpdate.select('circle')
+                .attr('r', d => d.data.leaf ? 4 : 7)
+                .style('fill', d => nodeColor(d))
+                .style('stroke', css('--node-stroke'))
+                .attr('cursor', d => (d.children || d._children) ? 'pointer' : 'default');
+
+            nodeUpdate.select('text')
+                .style('fill', css('--text-secondary'));
+
+            // EXIT
+            const nodeExit = node.exit().transition().duration(duration)
+                .attr('transform', `translate(${source.y},${source.x})`)
+                .remove();
+
+            nodeExit.select('circle').attr('r', 1e-6);
+            nodeExit.select('text').style('fill-opacity', 1e-6);
+
+            // ========== LINKS ==========
+            const link = g.selectAll('path.link')
+                .data(links, d => d.id);
+
+            const linkEnter = link.enter().insert('path', 'g')
+                .attr('class', 'link')
+                .attr('d', () => {
+                    const o = { x: source.x0, y: source.y0 };
+                    return diagonal(o, o);
+                })
+                .style('stroke', css('--link-color'));
+
+            const linkUpdate = linkEnter.merge(link);
+
+            linkUpdate.transition().duration(duration)
+                .attr('d', d => diagonal(d, d.parent))
+                .style('stroke', css('--link-color'));
+
+            link.exit().transition().duration(duration)
+                .attr('d', () => {
+                    const o = { x: source.x, y: source.y };
+                    return diagonal(o, o);
+                })
+                .remove();
+
+            // Guardar posições para transições
+            nodes.forEach(d => {
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+        }
+
+        // Curva Bézier horizontal
+        function diagonal(s, d) {
+            return `M ${s.y} ${s.x}
+                    C ${(s.y + d.y) / 2} ${s.x},
+                      ${(s.y + d.y) / 2} ${d.x},
+                      ${d.y} ${d.x}`;
+        }
+    }
+
+    // ===================== HELPERS VISUAIS =====================
+
+    function nodeColor(d) {
+        if (d._children) return css('--node-has-children'); // colapsado
+        if (d.data.leaf) {
+            // Cor baseada na direção
+            const dir = d.data.metrics?.categoria_direcao || '';
+            if (dir.includes('FORTE')) return css('--driver-forte');
+            if (dir.includes('RELEVANTE')) return css('--driver-relevante');
+            if (dir.includes('MODERADO')) return css('--driver-moderado');
+            if (dir.includes('ANTI')) return css('--anti-driver');
+            return css('--baixa-relevancia');
+        }
+        return css('--node-fill'); // nó interno expandido
+    }
+
+    function scoreColor(metrics) {
+        if (!metrics) return css('--text-muted');
+        const dir = metrics.categoria_direcao || '';
+        if (dir.includes('FORTE')) return css('--driver-forte');
+        if (dir.includes('RELEVANTE')) return css('--driver-relevante');
+        return css('--text-muted');
+    }
+
+    function truncate(text, max) {
+        if (!text) return '';
+        return text.length > max ? text.substring(0, max) + '…' : text;
+    }
+
+    function measureText(text) {
+        // Aproximação: 7px por caractere em 12px font
+        return text.length * 6.5;
+    }
+
+    // ===================== TOOLTIP =====================
+
+    function showTooltip(event, d) {
+        const m = d.data.metrics;
+        if (!m) return;
+
+        let html = `<div class="tip-title">${d.data.name}</div>`;
+        html += `<div class="tip-row">Nível: ${d.data.nivel}</div>`;
+
+        if (d.data.leaf) {
+            // Leaf: métricas individuais
+            html += `<div class="tip-row">Score Nexas: <span>${m.score_nexas.toFixed(2)}</span></div>`;
+            html += `<div class="tip-row">Lift: <span>${m.lift.toFixed(3)}</span></div>`;
+            html += `<div class="tip-row">Relevância: <span>${(m.relevancia * 100).toFixed(1)}%</span></div>`;
+            html += `<div class="tip-row">Direção: <span>${m.categoria_direcao}</span></div>`;
+            if (m.base_comum) html += `<div class="tip-row">Base comum: <span>${m.base_comum}</span></div>`;
+        } else {
+            // Nó interno: métricas agregadas
+            html += `<div class="tip-row">Score médio: <span>${m.avg_score.toFixed(2)}</span></div>`;
+            html += `<div class="tip-row">Relevância média: <span>${(m.avg_relevancia * 100).toFixed(1)}%</span></div>`;
+            html += `<div class="tip-row">Associações: <span>${m.count}</span></div>`;
+        }
+
+        tooltip.innerHTML = html;
+        tooltip.style.opacity = 1;
+        tooltip.style.left = (event.pageX + 15) + 'px';
+        tooltip.style.top = (event.pageY - 10) + 'px';
+    }
+
+    function hideTooltip() {
+        tooltip.style.opacity = 0;
+    }
+
+    // ===================== START =====================
+    init();
+    </script>
+</body>
+</html>
