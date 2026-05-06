@@ -4,802 +4,542 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEXAS Analytics</title>
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
-
-    <style>
-        /* ============================================ TEMAS ============================================ */
-        [data-theme="dark"] {
-            --bg-primary: #0A1628;
-            --bg-card: rgba(255,255,255,0.02);
-            --bg-input: rgba(255,255,255,0.06);
-            --bg-contexto: rgba(46,107,158,0.12);
-            --bg-tooltip: rgba(10,22,40,0.97);
-            --border: rgba(255,255,255,0.06);
-            --border-input: rgba(255,255,255,0.12);
-            --border-accent: #2E6B9E;
-            --text-primary: #FFFFFF;
-            --text-secondary: #E8ECF1;
-            --text-muted: #8BA5BC;
-            --text-faint: #6B8299;
-            --text-placeholder: #4A6A85;
-            --accent: #E8873D;
-            --accent-hover: rgba(232,135,61,0.15);
-            --node-internal: #1A2E44;
-            --node-collapsed: #2E6B9E;
-            --node-stroke: #2E6B9E;
-            --link-color: rgba(46,107,158,0.35);
-            --driver-forte: #E8873D;
-            --driver-relevante: #D4A06A;
-            --driver-moderado: #8BA5BC;
-            --anti-driver: #5B7FA3;
-            --baixa-relevancia: #3D5A73;
-            --toggle-bg: rgba(255,255,255,0.08);
-            --zoom-btn-bg: rgba(255,255,255,0.08);
-        }
-        [data-theme="light"] {
-            --bg-primary: #F4F6F9;
-            --bg-card: #FFFFFF;
-            --bg-input: #FFFFFF;
-            --bg-contexto: rgba(46,107,158,0.06);
-            --bg-tooltip: rgba(255,255,255,0.98);
-            --border: #E2E6EC;
-            --border-input: #D0D6DE;
-            --border-accent: #2E6B9E;
-            --text-primary: #1A2332;
-            --text-secondary: #2D3E50;
-            --text-muted: #5A6F82;
-            --text-faint: #7A8D9E;
-            --text-placeholder: #9AACBB;
-            --accent: #D47530;
-            --accent-hover: rgba(212,117,48,0.1);
-            --node-internal: #FFFFFF;
-            --node-collapsed: #D0E4F2;
-            --node-stroke: #2E6B9E;
-            --link-color: rgba(46,107,158,0.2);
-            --driver-forte: #D47530;
-            --driver-relevante: #B8884A;
-            --driver-moderado: #5A6F82;
-            --anti-driver: #3A6B94;
-            --baixa-relevancia: #9AACBB;
-            --toggle-bg: rgba(0,0,0,0.06);
-            --zoom-btn-bg: rgba(0,0,0,0.05);
-        }
-
-        /* ============================================ LAYOUT ============================================ */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-secondary);
-            min-height: 100vh;
-            transition: background 0.3s, color 0.3s;
-        }
-
-        .header {
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-        .header h1 {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--text-primary);
-            letter-spacing: 1.2px;
-            white-space: nowrap;
-        }
-        .header-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-
-        select, .theme-toggle, .btn {
-            background: var(--bg-input);
-            border: 1px solid var(--border-input);
-            color: var(--text-secondary);
-            padding: 8px 14px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-family: inherit;
-            cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
-        }
-        select:hover, .theme-toggle:hover, .btn:hover { border-color: var(--accent); }
-        select:focus, .btn:focus { outline: none; border-color: var(--accent); }
-        select:disabled { opacity: 0.45; cursor: not-allowed; }
-
-        .theme-toggle { display: flex; align-items: center; gap: 6px; }
-        .toggle-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
-
-        .contexto {
-            margin: 16px 24px;
-            padding: 12px 20px;
-            background: var(--bg-contexto);
-            border-left: 3px solid var(--border-accent);
-            border-radius: 0 8px 8px 0;
-            font-size: 13px;
-            line-height: 1.6;
-            color: var(--text-muted);
-        }
-        .contexto strong { color: var(--text-primary); }
-
-        .filtros { padding: 12px 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-        .filtros select { min-width: 200px; }
-
-        /* ===== DENDROGRAMA ===== */
-        .viz-wrapper {
-            margin: 12px 24px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Barra de controles do dendrograma */
-        .viz-toolbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--border);
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .viz-toolbar-left { display: flex; align-items: center; gap: 8px; }
-        .viz-toolbar-right { display: flex; align-items: center; gap: 8px; }
-
-        .zoom-controls { display: flex; align-items: center; gap: 4px; }
-        .zoom-btn {
-            background: var(--zoom-btn-bg);
-            border: 1px solid var(--border-input);
-            color: var(--text-secondary);
-            width: 30px;
-            height: 30px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: border-color 0.2s, background 0.2s;
-        }
-        .zoom-btn:hover { border-color: var(--accent); background: var(--accent-hover); }
-        .zoom-level {
-            font-size: 12px;
-            color: var(--text-muted);
-            min-width: 42px;
-            text-align: center;
-        }
-
-        /* Controle de espaçamento */
-        .spacing-control { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
-        .spacing-control input[type=range] {
-            width: 80px;
-            accent-color: var(--accent);
-        }
-
-        /* Busca de nós */
-        .search-input {
-            background: var(--bg-input);
-            border: 1px solid var(--border-input);
-            color: var(--text-secondary);
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-family: inherit;
-            width: 180px;
-        }
-        .search-input:focus { outline: none; border-color: var(--accent); }
-        .search-input::placeholder { color: var(--text-placeholder); }
-
-        /* Container do SVG com scroll */
-        .viz-dendrograma {
-            overflow: auto;
-            min-height: 400px;
-            max-height: 75vh;
-            cursor: grab;
-        }
-        .viz-dendrograma:active { cursor: grabbing; }
-        .viz-placeholder {
-            color: var(--text-placeholder);
-            font-size: 14px;
-            text-align: center;
-            padding: 80px 0;
-        }
-
-        /* ===== D3 NODE STYLES ===== */
-        .node circle {
-            stroke-width: 2px;
-            cursor: pointer;
-            transition: r 0.2s, stroke-width 0.2s;
-        }
-        .node circle:hover { stroke-width: 3px; }
-        .node text {
-            font-size: 12px;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            fill: var(--text-secondary);
-            pointer-events: none;
-        }
-        .node.highlight circle { stroke: var(--accent) !important; stroke-width: 3px !important; }
-        .node.highlight text { fill: var(--accent) !important; font-weight: 600; }
-
-        .link {
-            fill: none;
-            stroke-width: 1.5px;
-            transition: stroke 0.3s;
-        }
-
-        /* ===== MÉTRICAS ===== */
-        .metricas {
-            margin: 12px 24px 20px;
-            padding: 14px 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            display: flex;
-            gap: 28px;
-            flex-wrap: wrap;
-        }
-        .metrica-item { text-align: center; }
-        .metrica-item .valor { font-size: 22px; font-weight: 700; color: var(--text-primary); }
-        .metrica-item .label { font-size: 11px; color: var(--text-faint); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .driver-forte  { color: var(--driver-forte); }
-        .anti-driver   { color: var(--anti-driver); }
-
-        /* ===== TOOLTIP ===== */
-        .tooltip {
-            position: fixed;
-            background: var(--bg-tooltip);
-            border: 1px solid var(--accent);
-            border-radius: 8px;
-            padding: 12px 16px;
-            font-size: 12px;
-            line-height: 1.7;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.15s;
-            max-width: 340px;
-            z-index: 9999;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-        .tooltip .tip-title { font-weight: 600; color: var(--text-primary); margin-bottom: 6px; font-size: 13px; }
-        .tooltip .tip-row { color: var(--text-muted); }
-        .tooltip .tip-row span { color: var(--accent); font-weight: 600; }
-        .tooltip .tip-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            margin-top: 4px;
-        }
-
-        /* ===== LEGENDA ===== */
-        .legenda {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .legenda-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 11px;
-            color: var(--text-muted);
-        }
-        .legenda-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-    </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>NEXAS ANALYTICS</h1>
-        <div class="header-controls">
-            <select id="onda-select"><option value="">Carregando ondas...</option></select>
-            <button class="theme-toggle" id="theme-toggle">
-                <span class="toggle-icon">☀️</span>
-                <span class="toggle-label">Tema</span>
-            </button>
+<header class="header">
+    <h1>NEXAS ANALYTICS</h1>
+    <div class="header-right">
+        <select id="onda-select"><option value="">Carregando ondas...</option></select>
+        <button id="theme-toggle">
+            <span id="toggle-icon">☀️</span>
+            <span style="font-size:11px;letter-spacing:.5px">TEMA</span>
+        </button>
+    </div>
+</header>
+
+<div class="contexto" id="contexto">
+    Selecione uma onda e um cruzamento para iniciar a análise.
+</div>
+
+<div class="filtros">
+    <select id="assunto-select" disabled><option value="">Assunto</option></select>
+    <select id="pergunta-select" disabled><option value="">Pergunta / Indicador</option></select>
+    <select id="direcao-select">
+        <option value="">Todas as direções</option>
+        <option value="DRIVER">Só Drivers</option>
+        <option value="ANTI-DRIVER">Só Anti-drivers</option>
+    </select>
+</div>
+
+<div class="viz-wrapper">
+    <div class="viz-toolbar">
+        <div class="toolbar-group">
+            <span class="toolbar-label">Zoom</span>
+            <button class="zoom-btn" id="btn-zoom-in">＋</button>
+            <span class="zoom-pct" id="zoom-pct">100%</span>
+            <button class="zoom-btn" id="btn-zoom-out">－</button>
+            <button class="zoom-btn btn-sm" id="btn-zoom-fit" style="width:auto;padding:0 8px">Fit</button>
+        </div>
+        <div class="toolbar-group">
+            <span class="toolbar-label">Espaço Y</span>
+            <input type="range" id="slider-y" min="14" max="64" value="26" step="2">
+            <span class="slider-val" id="val-y">26</span>
+        </div>
+        <div class="toolbar-group">
+            <span class="toolbar-label">Espaço X</span>
+            <input type="range" id="slider-x" min="120" max="400" value="220" step="10">
+            <span class="slider-val" id="val-x">220</span>
+        </div>
+        <div class="toolbar-group">
+            <span class="toolbar-label">Buscar</span>
+            <input type="text" class="search-box" id="search-box" placeholder="🔍 texto...">
+            <button class="btn-sm" id="btn-clear-search">✕</button>
+        </div>
+        <div class="toolbar-group">
+            <button class="btn-sm" id="btn-expand">+ Expandir tudo</button>
+            <button class="btn-sm" id="btn-collapse">− Colapsar tudo</button>
+        </div>
+        <div class="legenda">
+            <div class="legenda-item"><div class="legenda-dot" style="background:var(--driver-forte)"></div>Driver forte</div>
+            <div class="legenda-item"><div class="legenda-dot" style="background:var(--driver-rel)"></div>Relevante</div>
+            <div class="legenda-item"><div class="legenda-dot" style="background:var(--driver-mod)"></div>Moderado</div>
+            <div class="legenda-item"><div class="legenda-dot" style="background:var(--anti-driver)"></div>Anti-driver</div>
+            <div class="legenda-item"><div class="legenda-dot" style="background:var(--baixa)"></div>Baixa rel.</div>
         </div>
     </div>
-
-    <div class="contexto" id="contexto">
-        Selecione uma onda e um cruzamento para iniciar a análise.
+    <div class="viz-svg-container" id="svg-container">
+        <div class="viz-placeholder">Dendrograma aparecerá aqui após selecionar o cruzamento</div>
     </div>
+</div>
 
-    <div class="filtros">
-        <select id="assunto-select" disabled><option value="">Assunto</option></select>
-        <select id="pergunta-select" disabled><option value="">Pergunta / Indicador</option></select>
-        <select id="direcao-select">
-            <option value="">Todas as direções</option>
-            <option value="DRIVER">Drivers</option>
-            <option value="ANTI-DRIVER">Anti-drivers</option>
-        </select>
-    </div>
+<div class="metricas">
+    <div class="metrica-item"><div class="valor" id="met-total">—</div><div class="label">Cruzamentos</div></div>
+    <div class="metrica-item"><div class="valor cor-driver" id="met-drivers">—</div><div class="label">Drivers</div></div>
+    <div class="metrica-item"><div class="valor cor-anti" id="met-anti">—</div><div class="label">Anti-drivers</div></div>
+    <div class="metrica-item"><div class="valor" id="met-score">—</div><div class="label">Top Score</div></div>
+</div>
 
-    <div class="viz-wrapper" id="viz-wrapper">
-        <!-- Toolbar do dendrograma -->
-        <div class="viz-toolbar">
-            <div class="viz-toolbar-left">
-                <!-- Zoom -->
-                <div class="zoom-controls">
-                    <button class="zoom-btn" id="zoom-in"  title="Zoom in">＋</button>
-                    <span class="zoom-level" id="zoom-level">100%</span>
-                    <button class="zoom-btn" id="zoom-out" title="Zoom out">－</button>
-                    <button class="zoom-btn" id="zoom-fit" title="Ajustar à tela" style="width:auto;padding:0 8px;font-size:12px;">Fit</button>
-                </div>
-                <!-- Espaçamento vertical -->
-                <div class="spacing-control">
-                    <span>Espaçamento:</span>
-                    <input type="range" id="spacing-slider" min="16" max="60" value="26" step="2">
-                    <span id="spacing-val">26px</span>
-                </div>
-            </div>
-            <div class="viz-toolbar-right">
-                <!-- Busca -->
-                <input type="text" class="search-input" id="search-input" placeholder="🔍 Buscar nó...">
-                <!-- Expandir/colapsar tudo -->
-                <button class="btn" id="btn-expand-all"   style="font-size:12px;padding:6px 12px;">+ Expandir tudo</button>
-                <button class="btn" id="btn-collapse-all" style="font-size:12px;padding:6px 12px;">− Colapsar tudo</button>
-                <!-- Legenda -->
-                <div class="legenda">
-                    <div class="legenda-item"><div class="legenda-dot" style="background:var(--driver-forte)"></div>Driver forte</div>
-                    <div class="legenda-item"><div class="legenda-dot" style="background:var(--driver-relevante)"></div>Relevante</div>
-                    <div class="legenda-item"><div class="legenda-dot" style="background:var(--driver-moderado)"></div>Moderado</div>
-                    <div class="legenda-item"><div class="legenda-dot" style="background:var(--anti-driver)"></div>Anti-driver</div>
-                    <div class="legenda-item"><div class="legenda-dot" style="background:var(--baixa-relevancia)"></div>Baixa rel.</div>
-                </div>
-            </div>
-        </div>
-        <!-- SVG do dendrograma -->
-        <div class="viz-dendrograma" id="dendrograma-container">
-            <div class="viz-placeholder">Dendrograma aparecerá aqui após selecionar o cruzamento</div>
-        </div>
-    </div>
-
-    <div class="metricas">
-        <div class="metrica-item"><div class="valor" id="met-total">—</div><div class="label">Cruzamentos</div></div>
-        <div class="metrica-item"><div class="valor driver-forte" id="met-drivers">—</div><div class="label">Drivers</div></div>
-        <div class="metrica-item"><div class="valor anti-driver" id="met-anti">—</div><div class="label">Anti-drivers</div></div>
-        <div class="metrica-item"><div class="valor" id="met-top-score">—</div><div class="label">Top Score</div></div>
-    </div>
-
-    <div class="tooltip" id="tooltip"></div>
+<div class="tooltip" id="tooltip"></div>
 
 <script>
-// ============================================================
-// NEXAS Analytics — Collapsible Tree com Zoom + Espaçamento
-// ============================================================
+const API = '/api';
 
-const API_BASE = '/api';
-const state = { onda: null, assunto: null, pergunta: null, direcao: null, treeData: null };
+// ── Layout state (lido pelos sliders) ──────────────────────────
+const layout = { spacingY: 26, spacingX: 220 };
 
-// ===================== TEMA =====================
+// ── Referências D3 globais ──────────────────────────────────────
+let svgEl = null, gTree = null, zoomBeh = null;
+let rootNode = null, doUpdate = null, currentTreemap = null;
+let nodeIdSeq = 0;
+
+const DURATION = 350;
+const MARGIN   = { top: 28, right: 280, bottom: 28, left: 56 };
+
+// ════════════════════════════════════════════════════════════════
+// TEMA
+// ════════════════════════════════════════════════════════════════
 function initTheme() {
-    const saved = localStorage.getItem('nexas-theme') || 'dark';
-    applyTheme(saved);
+    applyTheme(localStorage.getItem('nx-theme') || 'dark');
     document.getElementById('theme-toggle').addEventListener('click', () => {
-        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
         applyTheme(next);
-        localStorage.setItem('nexas-theme', next);
-        if (state.treeData) renderTree(state.treeData.tree);
+        localStorage.setItem('nx-theme', next);
+        if (doUpdate && rootNode) doUpdate(rootNode);
     });
 }
-function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    document.querySelector('.toggle-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
+function applyTheme(t) {
+    document.documentElement.dataset.theme = t;
+    document.getElementById('toggle-icon').textContent = t === 'dark' ? '☀️' : '🌙';
 }
-function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function cssVar(v) {
+    return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+}
 
-// ===================== FETCH =====================
-async function fetchJSON(endpoint, params = {}) {
+// ════════════════════════════════════════════════════════════════
+// CONTROLES — registrados UMA ÚNICA VEZ em initControls()
+// Nunca chamado dentro de renderTree()
+// ════════════════════════════════════════════════════════════════
+function initControls() {
+    // Zoom
+    document.getElementById('btn-zoom-in').addEventListener('click',
+        () => svgEl && svgEl.transition().duration(300).call(zoomBeh.scaleBy, 1.3));
+    document.getElementById('btn-zoom-out').addEventListener('click',
+        () => svgEl && svgEl.transition().duration(300).call(zoomBeh.scaleBy, 0.77));
+    document.getElementById('btn-zoom-fit').addEventListener('click', fitToScreen);
+
+    // Slider Y — espaçamento entre nós irmãos
+    const sY = document.getElementById('slider-y');
+    const vY = document.getElementById('val-y');
+    sY.addEventListener('input', () => {
+        layout.spacingY = +sY.value;
+        vY.textContent  = sY.value;
+        recalcLayout();
+    });
+
+    // Slider X — distância entre níveis
+    const sX = document.getElementById('slider-x');
+    const vX = document.getElementById('val-x');
+    sX.addEventListener('input', () => {
+        layout.spacingX = +sX.value;
+        vX.textContent  = sX.value;
+        if (doUpdate && rootNode) doUpdate(rootNode); // só redesenha (X não muda altura)
+    });
+
+    // Busca
+    const box = document.getElementById('search-box');
+    box.addEventListener('input', () => applySearch(box.value.trim()));
+    document.getElementById('btn-clear-search').addEventListener('click', () => {
+        box.value = '';
+        applySearch('');
+    });
+
+    // Expandir / Colapsar tudo
+    document.getElementById('btn-expand').addEventListener('click', () => {
+        if (!rootNode || !doUpdate) return;
+        rootNode.descendants().forEach(d => {
+            if (d._children) { d.children = d._children; d._children = null; }
+        });
+        doUpdate(rootNode);
+    });
+    document.getElementById('btn-collapse').addEventListener('click', () => {
+        if (!rootNode || !doUpdate) return;
+        rootNode.descendants().forEach(d => {
+            if (d.depth > 0 && d.children) { d._children = d.children; d.children = null; }
+        });
+        doUpdate(rootNode);
+    });
+
+    // Filtro de direção
+    document.getElementById('direcao-select').addEventListener('change', () => {
+        state.direcao = document.getElementById('direcao-select').value || null;
+        if (state.pergunta) loadData();
+    });
+}
+
+// Recalcula a altura do SVG quando spacingY muda e dispara update
+function recalcLayout() {
+    if (!rootNode || !doUpdate || !currentTreemap || !svgEl) return;
+    const leaves = rootNode.descendants().filter(d => !d.children && !d._children).length;
+    const newH   = Math.max(leaves * layout.spacingY, 400);
+    currentTreemap.size([newH, 9999]);
+    svgEl.attr('height', newH + MARGIN.top + MARGIN.bottom);
+    doUpdate(rootNode);
+}
+
+// Busca visual
+function applySearch(q) {
+    if (!q) {
+        d3.selectAll('.node').classed('highlighted', false).classed('dimmed', false);
+        return;
+    }
+    const ql = q.toLowerCase();
+    d3.selectAll('.node')
+        .classed('highlighted', d => d.data.name.toLowerCase().includes(ql))
+        .classed('dimmed',      d => !d.data.name.toLowerCase().includes(ql));
+}
+
+function fitToScreen() {
+    if (!svgEl || !gTree) return;
+    const c   = document.getElementById('svg-container');
+    const box = gTree.node().getBBox();
+    const sc  = Math.min(c.clientWidth / (box.width + 80), c.clientHeight / (box.height + 80), 1.5) * 0.9;
+    const tx  = (c.clientWidth  - box.width  * sc) / 2 - box.x * sc + MARGIN.left;
+    const ty  = (c.clientHeight - box.height * sc) / 2 - box.y * sc + MARGIN.top;
+    svgEl.transition().duration(500)
+        .call(zoomBeh.transform, d3.zoomIdentity.translate(tx, ty).scale(sc));
+}
+
+// ════════════════════════════════════════════════════════════════
+// FETCH
+// ════════════════════════════════════════════════════════════════
+async function get(endpoint, params = {}) {
     const url = new URL(endpoint, window.location.origin);
-    Object.entries(params).forEach(([k,v]) => { if (v) url.searchParams.set(k,v); });
+    Object.entries(params).forEach(([k,v]) => { if (v != null) url.searchParams.set(k, v); });
     const r = await fetch(url);
     if (!r.ok) throw new Error(`API ${r.status}`);
     return r.json();
 }
 
-// ===================== INIT =====================
+// ════════════════════════════════════════════════════════════════
+// STATE & FILTROS
+// ════════════════════════════════════════════════════════════════
+const state = { onda: null, assunto: null, pergunta: null, direcao: null };
+
 async function init() {
     initTheme();
+    initControls();
+
     try {
-        const ondas = await fetchJSON(`${API_BASE}/ondas`);
+        const ondas = await get(`${API}/ondas`);
         const sel = document.getElementById('onda-select');
         sel.innerHTML = '<option value="">Selecione a onda</option>';
         ondas.forEach(o => {
             const opt = document.createElement('option');
             opt.value = o.codigo;
-            opt.textContent = `${o.codigo} (${o.total_registros?.toLocaleString()} reg.)`;
+            opt.textContent = `${o.codigo}  (${(o.total_registros||0).toLocaleString()} reg.)`;
             sel.appendChild(opt);
         });
-        sel.addEventListener('change', onOndaChange);
+        sel.addEventListener('change', async e => {
+            state.onda = e.target.value;
+            if (!state.onda) return;
+            const f = await get(`${API}/filtros`, { onda: state.onda });
+            buildAssuntoSelect(f);
+        });
     } catch(e) {
         document.getElementById('contexto').textContent = 'Erro ao conectar com a API.';
+        console.error(e);
     }
 }
 
-// ===================== FILTROS =====================
-async function onOndaChange(e) {
-    state.onda = e.target.value; if (!state.onda) return;
-    const filtros = await fetchJSON(`${API_BASE}/filtros`, { onda: state.onda });
-    const sel = document.getElementById('assunto-select');
+// Reconstrói o select de assunto sem acumular listeners (replaceWith)
+function buildAssuntoSelect(filtros) {
+    let sel = document.getElementById('assunto-select');
     sel.innerHTML = '<option value="">Selecione o assunto</option>';
-    filtros.assuntos.forEach(a => { const o = document.createElement('option'); o.value = a; o.textContent = a; sel.appendChild(o); });
+    filtros.assuntos.forEach(a => {
+        const o = document.createElement('option');
+        o.value = a; o.textContent = a; sel.appendChild(o);
+    });
     sel.disabled = false;
-    sel.dataset.perguntas = JSON.stringify(filtros.perguntas);
-    sel.addEventListener('change', onAssuntoChange);
-}
-async function onAssuntoChange(e) {
-    state.assunto = e.target.value; if (!state.assunto) return;
-    const perguntas = JSON.parse(e.target.dataset.perguntas);
-    const sel = document.getElementById('pergunta-select');
-    sel.innerHTML = '<option value="">Selecione a pergunta</option>';
-    (perguntas[state.assunto] || []).forEach(p => { const o = document.createElement('option'); o.value = p; o.textContent = p; sel.appendChild(o); });
-    sel.disabled = false;
-    sel.addEventListener('change', onPerguntaChange);
-}
-async function onPerguntaChange(e) {
-    state.pergunta = e.target.value; if (!state.pergunta) return;
-    state.direcao = document.getElementById('direcao-select').value || null;
-    await loadVisualizacoes();
-}
-document.getElementById('direcao-select').addEventListener('change', () => {
-    state.direcao = document.getElementById('direcao-select').value || null;
-    if (state.pergunta) loadVisualizacoes();
-});
 
-// ===================== CARREGAR DADOS =====================
-async function loadVisualizacoes() {
-    const params = { onda: state.onda, assunto: state.assunto, pergunta: state.pergunta, direcao: state.direcao };
+    const clone = sel.cloneNode(true);
+    sel.parentNode.replaceChild(clone, sel);
+    clone.dataset.perguntas = JSON.stringify(filtros.perguntas);
+    clone.addEventListener('change', e => {
+        state.assunto = e.target.value;
+        if (!state.assunto) return;
+        buildPerguntaSelect(JSON.parse(e.target.dataset.perguntas)[state.assunto] || []);
+    });
+}
+
+function buildPerguntaSelect(lista) {
+    let sel = document.getElementById('pergunta-select');
+    sel.innerHTML = '<option value="">Selecione a pergunta</option>';
+    lista.forEach(p => {
+        const o = document.createElement('option');
+        o.value = p; o.textContent = p; sel.appendChild(o);
+    });
+    sel.disabled = false;
+
+    const clone = sel.cloneNode(true);
+    sel.parentNode.replaceChild(clone, sel);
+    clone.addEventListener('change', e => {
+        state.pergunta = e.target.value;
+        if (!state.pergunta) return;
+        state.direcao = document.getElementById('direcao-select').value || null;
+        loadData();
+    });
+}
+
+// ════════════════════════════════════════════════════════════════
+// CARREGAR DADOS
+// ════════════════════════════════════════════════════════════════
+async function loadData() {
+    const p = { onda: state.onda, assunto: state.assunto, pergunta: state.pergunta, direcao: state.direcao };
     try {
-        const [treeData, metricas] = await Promise.all([
-            fetchJSON(`${API_BASE}/tree`, params),
-            fetchJSON(`${API_BASE}/metricas`, params),
+        const [tree, met] = await Promise.all([
+            get(`${API}/tree`,     p),
+            get(`${API}/metricas`, p),
         ]);
-        state.treeData = treeData;
         document.getElementById('contexto').innerHTML =
-            `Análise: <strong>${treeData.contexto.assunto_coluna}</strong> → <strong>${treeData.contexto.pergunta_coluna}</strong>` +
-            (state.direcao ? ` | Filtro: <strong>${state.direcao}</strong>` : '');
-        document.getElementById('met-total').textContent  = metricas.total_cruzamentos.toLocaleString();
-        document.getElementById('met-drivers').textContent = metricas.total_drivers.toLocaleString();
-        document.getElementById('met-anti').textContent    = metricas.total_anti_drivers.toLocaleString();
-        document.getElementById('met-top-score').textContent = metricas.top_score.toFixed(1);
-        renderTree(treeData.tree);
+            `<strong>${tree.contexto.assunto_coluna}</strong> → ` +
+            `<strong>${tree.contexto.pergunta_coluna}</strong>` +
+            (state.direcao ? `  |  <strong>${state.direcao}</strong>` : '');
+
+        document.getElementById('met-total').textContent   = met.total_cruzamentos.toLocaleString();
+        document.getElementById('met-drivers').textContent = met.total_drivers.toLocaleString();
+        document.getElementById('met-anti').textContent    = met.total_anti_drivers.toLocaleString();
+        document.getElementById('met-score').textContent   = met.top_score.toFixed(1);
+
+        renderTree(tree.tree);
     } catch(e) {
         console.error(e);
-        document.getElementById('dendrograma-container').innerHTML =
-            '<div class="viz-placeholder">Erro ao carregar. Verifique o console.</div>';
+        document.getElementById('svg-container').innerHTML =
+            '<div class="viz-placeholder">Erro ao carregar dados. Veja o console.</div>';
     }
 }
 
-// ============================================================
+// ════════════════════════════════════════════════════════════════
 // D3 COLLAPSIBLE TREE
-// ============================================================
-let svgEl = null, gEl = null, zoomBehavior = null, rootNode = null;
-let treeNodeId = 0;
-const DURATION = 400;
-
-// Espaçamento configurável via slider
-let ROW_HEIGHT   = 26;  // espaçamento vertical entre nós
-const LEVEL_WIDTH = 260; // espaçamento horizontal entre níveis
-const MARGIN = { top: 30, right: 300, bottom: 30, left: 60 };
-
+// Nenhum controle externo é registrado aqui.
+// Expõe doUpdate e rootNode globalmente para que os controles
+// registrados em initControls() possam redesenhar.
+// ════════════════════════════════════════════════════════════════
 function renderTree(data) {
-    const container = document.getElementById('dendrograma-container');
+    const container = document.getElementById('svg-container');
     container.innerHTML = '';
-    treeNodeId = 0;
+    nodeIdSeq = 0;
 
-    // Contar leaves para calcular altura mínima
-    const countLeaves = n => (!n.children || !n.children.length) ? 1 : n.children.reduce((s,c) => s + countLeaves(c), 0);
+    const countLeaves = n =>
+        (!n.children?.length) ? 1 : n.children.reduce((s,c) => s + countLeaves(c), 0);
 
-    // Dimensões iniciais
-    const W = Math.max(container.clientWidth - 20, 900);
-    const H = Math.max(countLeaves(data) * ROW_HEIGHT * 1.2, 500);
+    const H = Math.max(countLeaves(data) * layout.spacingY, 400);
 
-    // Criar SVG com zoom
+    const treemap = d3.tree().size([H, 9999]);
+    currentTreemap = treemap;
+
     const svg = d3.select(container).append('svg')
-        .attr('width',  W + MARGIN.left + MARGIN.right)
-        .attr('height', H + MARGIN.top  + MARGIN.bottom);
-
+        .attr('width',  '100%')
+        .attr('height', H + MARGIN.top + MARGIN.bottom);
     svgEl = svg;
 
-    // Grupo principal
-    const g = svg.append('g')
-        .attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
-    gEl = g;
+    const g = svg.append('g').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
+    gTree = g;
 
-    // ---- ZOOM ----
-    zoomBehavior = d3.zoom()
-        .scaleExtent([0.1, 4])
-        .on('zoom', (event) => {
-            g.attr('transform', event.transform);
-            updateZoomLabel(event.transform.k);
+    zoomBeh = d3.zoom()
+        .scaleExtent([0.05, 6])
+        .on('zoom', ev => {
+            g.attr('transform', ev.transform);
+            document.getElementById('zoom-pct').textContent =
+                `${Math.round(ev.transform.k * 100)}%`;
         });
-
-    svg.call(zoomBehavior);
-
-    // Botões de zoom
-    document.getElementById('zoom-in').onclick  = () => svg.transition().duration(300).call(zoomBehavior.scaleBy, 1.3);
-    document.getElementById('zoom-out').onclick = () => svg.transition().duration(300).call(zoomBehavior.scaleBy, 0.77);
-    document.getElementById('zoom-fit').onclick = fitToScreen;
-
-    // Scroll com roda do mouse dentro do container
-    svg.on('wheel.zoom', null); // desativa zoom por roda (deixa scroll nativo do container)
-
-    // Layout
-    const treemap = d3.tree().size([H, W]);
+    svg.call(zoomBeh);
+    svg.on('wheel.zoom', null); // roda = scroll, não zoom
 
     rootNode = d3.hierarchy(data, d => d.children);
     rootNode.x0 = H / 2;
     rootNode.y0 = 0;
 
-    // Colapsar abaixo do nível 1
+    // Colapsar tudo abaixo do nível 1
     if (rootNode.children) {
-        rootNode.children.forEach(c1 => {
-            if (c1.children) c1.children.forEach(collapse);
-        });
+        rootNode.children.forEach(c => { if (c.children) c.children.forEach(collapseNode); });
     }
 
-    update(rootNode);
+    // ── update exposta globalmente ──────────────────────────────
+    doUpdate = function update(source) {
+        const tl    = treemap(rootNode);
+        const nodes = tl.descendants();
+        const links = tl.descendants().slice(1);
 
-    // ---- Expandir/Colapsar tudo ----
-    document.getElementById('btn-expand-all').onclick = () => {
-        rootNode.descendants().forEach(d => {
-            if (d._children) { d.children = d._children; d._children = null; }
-        });
-        update(rootNode);
-    };
-    document.getElementById('btn-collapse-all').onclick = () => {
-        rootNode.descendants().forEach(d => {
-            if (d.depth > 0 && d.children) { d._children = d.children; d.children = null; }
-        });
-        update(rootNode);
-    };
+        // Aplica spacingX: posição horizontal = profundidade × spacingX
+        nodes.forEach(d => { d.y = d.depth * layout.spacingX; });
 
-    // ---- Slider de espaçamento ----
-    const slider = document.getElementById('spacing-slider');
-    slider.value = ROW_HEIGHT;
-    document.getElementById('spacing-val').textContent = `${ROW_HEIGHT}px`;
-    slider.oninput = function() {
-        ROW_HEIGHT = +this.value;
-        document.getElementById('spacing-val').textContent = `${ROW_HEIGHT}px`;
-        applySpacing();
-    };
+        // ── NÓS ───────────────────────────────────────────────
+        const node = g.selectAll('g.node')
+            .data(nodes, d => d.id || (d.id = ++nodeIdSeq));
 
-    // ---- Busca ----
-    document.getElementById('search-input').oninput = function() {
-        const q = this.value.trim().toLowerCase();
-        d3.selectAll('.node').classed('highlight', false);
-        if (!q) return;
-        d3.selectAll('.node').classed('highlight', d =>
-            d.data.name.toLowerCase().includes(q)
-        );
-    };
-
-    function applySpacing() {
-        const allLeaves = rootNode.descendants().filter(d => !d.children && !d._children).length;
-        const newH = Math.max(allLeaves * ROW_HEIGHT * 1.2, 500);
-        treemap.size([newH, W]);
-        svgEl.attr('height', newH + MARGIN.top + MARGIN.bottom);
-        update(rootNode);
-    }
-
-    function collapse(d) {
-        if (d.children) { d._children = d.children; d._children.forEach(collapse); d.children = null; }
-    }
-
-    function update(source) {
-        const treeLayout = treemap(rootNode);
-        const nodes = treeLayout.descendants();
-        const links  = treeLayout.descendants().slice(1);
-
-        // Ajuste horizontal proporcional ao nível
-        nodes.forEach(d => { d.y = d.depth * LEVEL_WIDTH; });
-
-        // ======== NÓS ========
-        const node = gEl.selectAll('g.node')
-            .data(nodes, d => d.id || (d.id = ++treeNodeId));
-
-        const nodeEnter = node.enter().append('g')
+        const enter = node.enter().append('g')
             .attr('class', 'node')
-            .attr('transform', `translate(${source.y0},${source.x0})`)
-            .on('click', (event, d) => {
-                if (d.children)  { d._children = d.children; d.children = null; }
-                else              { d.children = d._children; d._children = null; }
-                update(d);
+            .attr('transform', `translate(${source.y0 ?? 0},${source.x0 ?? 0})`)
+            .on('click', (_, d) => {
+                if (d.children)  { d._children = d.children;  d.children  = null; }
+                else              { d.children  = d._children; d._children = null; }
+                doUpdate(d);
             })
-            .on('mousemove', (event, d) => showTooltip(event, d))
-            .on('mouseleave', hideTooltip);
+            .on('mousemove',  (ev, d) => showTip(ev, d))
+            .on('mouseleave', hideTip);
 
-        // Círculo
-        nodeEnter.append('circle').attr('r', 1e-6).style('fill', d => nodeColor(d));
+        enter.append('circle').attr('r', 1e-6);
+        enter.each(function(d) { buildLabel(d3.select(this), d); });
 
-        // Label principal (com quebra automática de linha)
-        nodeEnter.each(function(d) {
-            const el = d3.select(this);
-            const isLeft = !!(d.children || d._children);  // esquerda = nó pai
-            const x = isLeft ? -12 : 12;
-            const anchor = isLeft ? 'end' : 'start';
-            const maxChars = 38;
-            const text = d.data.name || '';
-            const lines = wrapText(text, maxChars);
-
-            const tg = el.append('g').attr('class', 'label-group');
-
-            lines.forEach((line, i) => {
-                tg.append('text')
-                    .attr('x', x)
-                    .attr('dy', `${(i - (lines.length - 1) / 2) * 1.2}em`)
-                    .attr('text-anchor', anchor)
-                    .attr('fill', css('--text-secondary'))
-                    .text(line);
-            });
-
-            // Score badge nos leaves
-            if (d.data.leaf && d.data.metrics) {
-                const score = d.data.metrics.score_nexas;
-                const dir   = d.data.metrics.categoria_direcao || '';
-                tg.append('text')
-                    .attr('x', x)
-                    .attr('dy', `${(lines.length / 2 + 0.3) * 1.2}em`)
-                    .attr('text-anchor', anchor)
-                    .attr('fill', scoreColor(dir))
-                    .attr('font-size', '10px')
-                    .attr('font-weight', '700')
-                    .text(`Score: ${score.toFixed(1)}`);
-            }
-        });
-
-        // UPDATE
-        const nodeUpdate = nodeEnter.merge(node);
-        nodeUpdate.transition().duration(DURATION)
+        const merged = enter.merge(node);
+        merged.transition().duration(DURATION)
             .attr('transform', d => `translate(${d.y},${d.x})`);
-
-        nodeUpdate.select('circle')
+        merged.select('circle')
             .attr('r', d => d.data.leaf ? 5 : 8)
             .style('fill',   d => nodeColor(d))
-            .style('stroke', d => d.data.leaf ? scoreColor(d.data.metrics?.categoria_direcao) : css('--node-stroke'));
+            .style('stroke', d => d.data.leaf
+                ? scoreColor(d.data.metrics?.categoria_direcao)
+                : cssVar('--node-stroke'));
+        merged.selectAll('text').style('fill', cssVar('--text-secondary'));
 
-        // Atualizar labels existentes
-        nodeUpdate.selectAll('.label-group text').attr('fill', css('--text-secondary'));
-
-        // EXIT
-        const nodeExit = node.exit().transition().duration(DURATION)
+        node.exit().transition().duration(DURATION)
             .attr('transform', `translate(${source.y},${source.x})`).remove();
-        nodeExit.select('circle').attr('r', 1e-6);
 
-        // ======== LINKS ========
-        const link = gEl.selectAll('path.link').data(links, d => d.id);
+        // ── LINKS ─────────────────────────────────────────────
+        const link = g.selectAll('path.link').data(links, d => d.id);
+        const lEnter = link.enter().insert('path','g')
+            .attr('class','link')
+            .attr('d', () => { const o={x:source.x0??0,y:source.y0??0}; return bez(o,o); });
 
-        const linkEnter = link.enter().insert('path','g')
-            .attr('class', 'link')
-            .attr('d', () => { const o = {x: source.x0, y: source.y0}; return diagonal(o, o); })
-            .style('stroke', css('--link-color'));
-
-        linkEnter.merge(link).transition().duration(DURATION)
-            .attr('d', d => diagonal(d, d.parent))
-            .style('stroke', d => linkColor(d))
+        lEnter.merge(link).transition().duration(DURATION)
+            .attr('d', d => bez(d, d.parent))
+            .style('stroke',       d => linkColor(d))
             .style('stroke-width', d => linkWidth(d));
 
         link.exit().transition().duration(DURATION)
-            .attr('d', () => { const o = {x: source.x, y: source.y}; return diagonal(o, o); }).remove();
+            .attr('d', () => { const o={x:source.x,y:source.y}; return bez(o,o); }).remove();
 
         nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
-    }
+    };
 
-    function fitToScreen() {
-        const bounds = gEl.node().getBBox();
-        const cW = container.clientWidth;
-        const cH = container.clientHeight;
-        const scale = Math.min(cW / (bounds.width + 80), cH / (bounds.height + 80), 1.5) * 0.9;
-        const tx = (cW - bounds.width  * scale) / 2 - bounds.x * scale;
-        const ty = (cH - bounds.height * scale) / 2 - bounds.y * scale;
-        svgEl.transition().duration(500)
-            .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx + MARGIN.left, ty + MARGIN.top).scale(scale));
+    doUpdate(rootNode);
+}
+
+// ════════════════════════════════════════════════════════════════
+// HELPERS D3
+// ════════════════════════════════════════════════════════════════
+function collapseNode(d) {
+    if (d.children) {
+        d._children = d.children;
+        d._children.forEach(collapseNode);
+        d.children = null;
     }
 }
 
-// ===================== HELPERS =====================
+function bez(s, d) {
+    const mx = (s.y + d.y) / 2;
+    return `M${s.y},${s.x} C${mx},${s.x} ${mx},${d.x} ${d.y},${d.x}`;
+}
 
-function diagonal(s, d) {
-    return `M ${s.y} ${s.x} C ${(s.y + d.y)/2} ${s.x}, ${(s.y + d.y)/2} ${d.x}, ${d.y} ${d.x}`;
+function buildLabel(sel, d) {
+    const isParent = !!(d.children || d._children);
+    const xOff     = isParent ? -13 : 13;
+    const anchor   = isParent ? 'end' : 'start';
+    const lines    = wrapText(d.data.name || '', 36);
+    const midLine  = (lines.length - 1) / 2;
+    const tg = sel.append('g').attr('class','label-g');
+
+    lines.forEach((ln, i) => {
+        tg.append('text')
+            .attr('x', xOff)
+            .attr('dy', `${(i - midLine) * 1.25}em`)
+            .attr('text-anchor', anchor)
+            .style('fill', cssVar('--text-secondary'))
+            .text(ln);
+    });
+
+    if (d.data.leaf && d.data.metrics?.score_nexas != null) {
+        tg.append('text')
+            .attr('x', xOff)
+            .attr('dy', `${(lines.length / 2 + 0.55) * 1.25}em`)
+            .attr('text-anchor', anchor)
+            .style('fill', scoreColor(d.data.metrics.categoria_direcao))
+            .style('font-size', '10px')
+            .style('font-weight', '700')
+            .text(`Score ${d.data.metrics.score_nexas.toFixed(1)}`);
+    }
+}
+
+function wrapText(text, max) {
+    if (text.length <= max) return [text];
+    const words = text.split(' ');
+    const lines = []; let cur = '';
+    for (const w of words) {
+        const c = cur ? `${cur} ${w}` : w;
+        if (c.length <= max) { cur = c; }
+        else { if (cur) lines.push(cur); cur = w; }
+    }
+    if (cur) lines.push(cur);
+    return lines.length ? lines : [text.slice(0, max) + '…'];
 }
 
 function nodeColor(d) {
-    if (d._children) return css('--node-collapsed');
-    if (d.data.leaf) {
-        const dir = d.data.metrics?.categoria_direcao || '';
-        if (dir.includes('FORTE'))    return css('--driver-forte');
-        if (dir.includes('RELEVANTE'))return css('--driver-relevante');
-        if (dir.includes('MODERADO')) return css('--driver-moderado');
-        if (dir.includes('ANTI'))     return css('--anti-driver');
-        return css('--baixa-relevancia');
-    }
-    return css('--node-internal');
+    if (d._children)  return cssVar('--node-collapsed');
+    if (d.data.leaf)  return leafColor(d.data.metrics?.categoria_direcao);
+    return cssVar('--node-internal');
 }
-
-function scoreColor(dir) {
-    if (!dir) return css('--text-muted');
-    if (dir.includes('FORTE'))     return css('--driver-forte');
-    if (dir.includes('RELEVANTE')) return css('--driver-relevante');
-    if (dir.includes('MODERADO'))  return css('--driver-moderado');
-    if (dir.includes('ANTI'))      return css('--anti-driver');
-    return css('--text-muted');
+function leafColor(dir) {
+    if (!dir) return cssVar('--baixa');
+    if (dir.includes('FORTE'))     return cssVar('--driver-forte');
+    if (dir.includes('RELEVANTE')) return cssVar('--driver-rel');
+    if (dir.includes('MODERADO'))  return cssVar('--driver-mod');
+    if (dir.includes('ANTI'))      return cssVar('--anti-driver');
+    return cssVar('--baixa');
 }
-
+function scoreColor(dir) { return leafColor(dir); }
 function linkColor(d) {
-    if (!d.data.leaf) return css('--link-color');
+    if (!d.data.leaf) return cssVar('--link-default');
     const dir = d.data.metrics?.categoria_direcao || '';
-    if (dir.includes('FORTE'))     return css('--driver-forte');
-    if (dir.includes('RELEVANTE')) return css('--driver-relevante');
-    return css('--link-color');
+    if (dir.includes('FORTE'))     return cssVar('--driver-forte');
+    if (dir.includes('RELEVANTE')) return cssVar('--driver-rel');
+    return cssVar('--link-default');
 }
-
 function linkWidth(d) {
-    if (!d.data.leaf || !d.data.metrics) return 1.5;
-    const s = Math.abs(d.data.metrics.score_nexas || 0);
-    return Math.min(Math.max(s / 200, 1), 5);  // proporcional ao score, entre 1 e 5px
+    if (!d.data.leaf || !d.data.metrics?.score_nexas) return 1.5;
+    return Math.min(Math.max(Math.abs(d.data.metrics.score_nexas) / 250, 1), 5);
 }
 
-// Quebra texto em linhas de maxChars
-function wrapText(text, maxChars) {
-    if (!text || text.length <= maxChars) return [text || ''];
-    const words = text.split(' ');
-    const lines = [];
-    let current = '';
-    for (const word of words) {
-        if ((current + ' ' + word).trim().length <= maxChars) {
-            current = (current + ' ' + word).trim();
-        } else {
-            if (current) lines.push(current);
-            current = word;
-        }
-    }
-    if (current) lines.push(current);
-    return lines.length ? lines : [text.substring(0, maxChars) + '…'];
-}
-
-function updateZoomLabel(k) {
-    document.getElementById('zoom-level').textContent = `${Math.round(k * 100)}%`;
-}
-
-// ===================== TOOLTIP =====================
-const tooltip = document.getElementById('tooltip');
-
-function showTooltip(event, d) {
+// ════════════════════════════════════════════════════════════════
+// TOOLTIP
+// ════════════════════════════════════════════════════════════════
+const tipEl = document.getElementById('tooltip');
+function showTip(ev, d) {
     const m = d.data.metrics;
     if (!m) return;
-    let html = `<div class="tip-title">${d.data.name}</div>`;
-    html += `<div class="tip-row">Nível: ${d.data.nivel}</div>`;
+    let h = `<div class="t-title">${d.data.name}</div>`;
     if (d.data.leaf) {
-        html += `<div class="tip-row">Score Nexas: <span>${m.score_nexas.toFixed(2)}</span></div>`;
-        html += `<div class="tip-row">Lift: <span>${m.lift.toFixed(3)}</span></div>`;
-        html += `<div class="tip-row">Relevância: <span>${(m.relevancia * 100).toFixed(1)}%</span></div>`;
-        const cor = scoreColor(m.categoria_direcao);
-        html += `<div class="tip-row">Direção: <span style="color:${cor}">${m.categoria_direcao}</span></div>`;
-        if (m.base_comum) html += `<div class="tip-row">Base: <span>${m.base_comum}</span></div>`;
+        h += `<div class="t-row">Score Nexas: <em>${m.score_nexas.toFixed(2)}</em></div>`;
+        h += `<div class="t-row">Lift: <em>${m.lift.toFixed(3)}</em></div>`;
+        h += `<div class="t-row">Relevância: <em>${(m.relevancia*100).toFixed(1)}%</em></div>`;
+        h += `<div class="t-row">Direção: <em style="color:${scoreColor(m.categoria_direcao)}">${m.categoria_direcao}</em></div>`;
+        if (m.base_comum) h += `<div class="t-row">Base: <em>${m.base_comum}</em></div>`;
     } else {
-        html += `<div class="tip-row">Score médio: <span>${m.avg_score.toFixed(2)}</span></div>`;
-        html += `<div class="tip-row">Relevância média: <span>${(m.avg_relevancia * 100).toFixed(1)}%</span></div>`;
-        html += `<div class="tip-row">Associações: <span>${m.count}</span></div>`;
-        html += `<div class="tip-row" style="font-size:11px;margin-top:4px;color:var(--text-placeholder)">Clique para expandir/colapsar</div>`;
+        h += `<div class="t-row">Score médio: <em>${m.avg_score.toFixed(2)}</em></div>`;
+        h += `<div class="t-row">Relevância média: <em>${(m.avg_relevancia*100).toFixed(1)}%</em></div>`;
+        h += `<div class="t-row">Associações: <em>${m.count}</em></div>`;
+        h += `<div class="t-hint">Clique para expandir / colapsar</div>`;
     }
-    tooltip.innerHTML = html;
-    tooltip.style.opacity = 1;
-    tooltip.style.left = (event.clientX + 16) + 'px';
-    tooltip.style.top  = (event.clientY - 10) + 'px';
+    tipEl.innerHTML = h;
+    tipEl.style.opacity = '1';
+    tipEl.style.left = `${ev.clientX + 16}px`;
+    tipEl.style.top  = `${ev.clientY - 10}px`;
 }
+function hideTip() { tipEl.style.opacity = '0'; }
 
-function hideTooltip() { tooltip.style.opacity = 0; }
-
-// ===================== START =====================
+// ════════════════════════════════════════════════════════════════
 init();
 </script>
 </body>
