@@ -4,12 +4,19 @@ __pycache__/
 .venv/
 *.egg-info/
 
+# Pixi (ambiente local — NÃO versionar)
+.pixi/
+# pixi.lock É versionado (reprodutibilidade)
+
 # Variáveis de ambiente (contêm senhas)
 .env
 
 # Dados de cliente (nunca vão pro Git)
 dados/*.xlsx
 dados/*.csv
+dados/*.db
+dados/*.db-shm
+dados/*.db-wal
 !dados/.gitkeep
 
 # Sistema operacional
@@ -19,4 +26,3 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
-nexas.db

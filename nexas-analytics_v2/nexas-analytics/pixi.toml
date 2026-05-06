@@ -1,0 +1,85 @@
+# ============================================
+# NEXAS Analytics — Pixi Configuration
+#
+# Setup:   pixi install
+# Rodar:   pixi run serve
+# Ingerir: pixi run ingest dados\arquivo.xlsx --onda 2025-Q1
+# Testes:  pixi run test
+# ============================================
+
+[workspace] # <-- CORRIGIDO: Substitui [project]
+name = "nexas-analytics"
+version = "0.1.0"
+description = "Dashboard analítico de visualização de associações (Lift Condicional)"
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-arm64"]
+
+# ============================================
+# Dependências principais (conda-forge)
+# ============================================
+[dependencies]
+python = ">=3.11,<3.13"
+pandas = ">=2.2"
+openpyxl = ">=3.1"
+sqlalchemy = ">=2.0"
+psycopg2 = ">=2.9" # <-- ADICIONADO: Driver nativo para o PostgreSQL/PostGIS
+
+# ============================================
+# Dependências PyPI (não disponíveis no conda-forge
+# ou melhor mantidas via pip)
+# ============================================
+[pypi-dependencies]
+fastapi = ">=0.115"
+uvicorn = { version = ">=0.34", extras = ["standard"] }
+pydantic = ">=2.10"
+pydantic-settings = ">=2.7"
+python-dotenv = ">=1.0"
+python-multipart = ">=0.0.20"
+
+# ============================================
+# Dependências de desenvolvimento
+# ============================================
+[feature.dev.dependencies]
+pytest = ">=8.3"
+
+[feature.dev.pypi-dependencies]
+httpx = ">=0.28"
+
+# ============================================
+# Environments
+# ============================================
+[environments]
+default = { features = [], solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
+
+# ============================================
+# Tasks — atalhos para comandos comuns
+# ============================================
+
+[tasks]
+# Rodar o servidor de desenvolvimento
+serve = "uvicorn backend.main:app --reload --port 8000"
+
+# Rodar em produção (sem reload, sem logs SQL)
+serve-prod = "uvicorn backend.main:app --host 0.0.0.0 --port 8000"
+
+# Ingerir XLSX no banco
+# Uso: pixi run ingest "dados\arquivo.xlsx" --onda 2025-Q1
+ingest = "python -m scripts.ingest_cli"
+
+# Criar/resetar o banco de dados
+create-db = "python -m scripts.create_db"
+
+# Rodar testes
+[feature.dev.tasks]
+test = "pytest backend/tests/ -v"
+
+# ============================================
+# Ativação — variáveis de ambiente carregadas
+# automaticamente quando o ambiente ativa
+# ============================================
+# ============================================
+# Nota: O .env é lido automaticamente pelo
+# python-dotenv dentro do backend/config.py.
+# Não precisa de activation script no Pixi.
+# ============================================
