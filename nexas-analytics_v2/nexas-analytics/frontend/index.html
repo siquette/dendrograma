@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXAS Analytics</title>
+    <title>NEXAS Analytics v2.0 - Híbrido</title>
     <link rel="stylesheet" href="css/style.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
@@ -34,6 +34,13 @@
     </select>
 </div>
 
+<div class="metricas">
+    <div class="metrica-item"><div class="valor" id="met-total">—</div><div class="label">Cruzamentos</div></div>
+    <div class="metrica-item"><div class="valor cor-driver" id="met-drivers">—</div><div class="label">Drivers</div></div>
+    <div class="metrica-item"><div class="valor cor-anti" id="met-anti">—</div><div class="label">Anti-drivers</div></div>
+    <div class="metrica-item"><div class="valor" id="met-score">—</div><div class="label">Top Score</div></div>
+</div>
+
 <div class="viz-wrapper">
     <div class="viz-toolbar">
         <div class="toolbar-group">
@@ -41,11 +48,11 @@
             <button class="zoom-btn" id="btn-zoom-in">＋</button>
             <span class="zoom-pct" id="zoom-pct">100%</span>
             <button class="zoom-btn" id="btn-zoom-out">－</button>
-            <button class="zoom-btn btn-sm" id="btn-zoom-fit" style="width:auto;padding:0 8px">Fit</button>
+            <button class="zoom-btn btn-sm" id="btn-zoom-fit" style="width:auto;padding:0 8px">⊞ Fit</button>
         </div>
         <div class="toolbar-group">
             <span class="toolbar-label">Espaço Y</span>
-            <input type="range" id="slider-y" min="14" max="64" value="26" step="2">
+            <input type="range" id="slider-y" min="14" max="100" value="26" step="2">
             <span class="slider-val" id="val-y">26</span>
         </div>
         <div class="toolbar-group">
@@ -59,15 +66,26 @@
             <button class="btn-sm" id="btn-clear-search">✕</button>
         </div>
         <div class="toolbar-group">
-            <button class="btn-sm" id="btn-expand">+ Expandir tudo</button>
-            <button class="btn-sm" id="btn-collapse">− Colapsar tudo</button>
+            <button class="btn-sm" id="btn-expand">＋ Expandir</button>
+            <button class="btn-sm" id="btn-collapse">－ Colapsar</button>
+        </div>
+        <div class="toolbar-group">
+            <span class="toolbar-label">Agregação</span>
+            <select id="agregacao-select" class="btn-sm">
+                <option value="weighted_mean">Média Ponderada</option>
+                <option value="mean">Média Simples</option>
+                <option value="median">Mediana</option>
+                <option value="max">Máximo (Potencial)</option>
+            </select>
+        </div>
+        <div class="toolbar-group">
+            <button class="btn-sm" id="btn-fullscreen" title="Fullscreen (F)">⛶ Full</button>
+            <button class="btn-sm" id="btn-export" title="Exportar PNG">📷 Export</button>
         </div>
         <div class="legenda">
-            <div class="legenda-item"><div class="legenda-dot" style="background:var(--driver-forte)"></div>Driver forte</div>
-            <div class="legenda-item"><div class="legenda-dot" style="background:var(--driver-rel)"></div>Relevante</div>
-            <div class="legenda-item"><div class="legenda-dot" style="background:var(--driver-mod)"></div>Moderado</div>
-            <div class="legenda-item"><div class="legenda-dot" style="background:var(--anti-driver)"></div>Anti-driver</div>
-            <div class="legenda-item"><div class="legenda-dot" style="background:var(--baixa)"></div>Baixa rel.</div>
+            <div class="legenda-item"><div class="legenda-dot" style="background:#E8873D"></div>Driver</div>
+            <div class="legenda-item"><div class="legenda-dot" style="background:#6B7F8C"></div>Neutro</div>
+            <div class="legenda-item"><div class="legenda-dot" style="background:#2E4A60"></div>Anti-D</div>
         </div>
     </div>
     <div class="viz-svg-container" id="svg-container">
@@ -75,11 +93,46 @@
     </div>
 </div>
 
-<div class="metricas">
-    <div class="metrica-item"><div class="valor" id="met-total">—</div><div class="label">Cruzamentos</div></div>
-    <div class="metrica-item"><div class="valor cor-driver" id="met-drivers">—</div><div class="label">Drivers</div></div>
-    <div class="metrica-item"><div class="valor cor-anti" id="met-anti">—</div><div class="label">Anti-drivers</div></div>
-    <div class="metrica-item"><div class="valor" id="met-score">—</div><div class="label">Top Score</div></div>
+<div class="loading-overlay" id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text" id="loading-text">Carregando...</div>
+</div>
+
+<div class="fullscreen-mini-toolbar" id="mini-toolbar">
+    <button class="zoom-btn" onclick="document.getElementById('btn-zoom-in').click()" title="Zoom In">＋</button>
+    <button class="zoom-btn" onclick="document.getElementById('btn-zoom-out').click()" title="Zoom Out">－</button>
+    <button class="zoom-btn" onclick="document.getElementById('btn-zoom-fit').click()" title="Fit">⊞</button>
+    <button class="btn-sm" id="btn-exit-fullscreen" title="Sair (ESC)">✕ Sair</button>
+</div>
+
+<div class="legend-expanded" id="legend-expanded">
+    <h4>📊 Sistema de Cores</h4>
+    <div style="margin: 10px 0;">
+        <strong style="color:#94a3b8">Pontos (Tipo):</strong>
+        <div style="display: flex; gap: 8px; margin-top: 5px;">
+            <div style="display:flex;align-items:center;gap:4px">
+                <div style="width:12px;height:12px;border-radius:50%;background:#E8873D"></div>
+                <span style="font-size:11px;color:#cbd5e1">Driver</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px">
+                <div style="width:12px;height:12px;border-radius:50%;background:#6B7F8C"></div>
+                <span style="font-size:11px;color:#cbd5e1">Neutro</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px">
+                <div style="width:12px;height:12px;border-radius:50%;background:#2E4A60"></div>
+                <span style="font-size:11px;color:#cbd5e1">Anti-driver</span>
+            </div>
+        </div>
+    </div>
+    <div style="margin-top: 15px;">
+        <strong style="color:#94a3b8">Linhas (Intensidade):</strong>
+        <div class="legend-gradient-bar" style="background: linear-gradient(to right, #2E4A60, #5A8AB8, #6B7F8C, #9BB8A8, #D4A06A, #E8873D); height: 15px; border-radius: 4px; margin: 8px 0;"></div>
+        <div style="display: flex; justify-content: space-between; font-size: 10px; color: #64748b;">
+            <span>-1000</span>
+            <span>0</span>
+            <span>+1000</span>
+        </div>
+    </div>
 </div>
 
 <div class="tooltip" id="tooltip"></div>
@@ -87,150 +140,618 @@
 <script>
 const API = '/api';
 
-// ── Layout state (lido pelos sliders) ──────────────────────────
+const state = { 
+    onda: null, 
+    assunto: null, 
+    pergunta: null, 
+    direcao: null,
+    agregacao: 'weighted_mean'
+};
+
 const layout = { spacingY: 26, spacingX: 220 };
+let rootNode = null, doUpdate = null, svgEl = null, zoomBeh = null, tipEl = null;
+let isFullscreen = false;
 
-// ── Referências D3 globais ──────────────────────────────────────
-let svgEl = null, gTree = null, zoomBeh = null;
-let rootNode = null, doUpdate = null, currentTreemap = null;
-let nodeIdSeq = 0;
+// ═══════════════════════════════════════════════════════════════
+// SISTEMA DE CORES HÍBRIDO
+// Leafs: categórico (Driver/Anti-driver)
+// Internos: gradiente (avg_score)
+// Linhas: gradiente (intensidade)
+// ═══════════════════════════════════════════════════════════════
 
-const DURATION = 350;
-const MARGIN   = { top: 28, right: 280, bottom: 28, left: 56 };
+const COLOR_STOPS = [
+    { score: -2000, color: '#2E4A60' },
+    { score: -1000, color: '#4A7299' },
+    { score: -200, color: '#5A8AB8' },
+    { score: -30, color: '#6B7F8C' },
+    { score: 30, color: '#9BB8A8' },
+    { score: 200, color: '#D4A06A' },
+    { score: 1000, color: '#E8873D' },
+    { score: 2000, color: '#E8873D' }
+];
 
-// ════════════════════════════════════════════════════════════════
-// TEMA
-// ════════════════════════════════════════════════════════════════
-function initTheme() {
-    applyTheme(localStorage.getItem('nx-theme') || 'dark');
-    document.getElementById('theme-toggle').addEventListener('click', () => {
-        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-        applyTheme(next);
-        localStorage.setItem('nx-theme', next);
-        if (doUpdate && rootNode) doUpdate(rootNode);
-    });
-}
-function applyTheme(t) {
-    document.documentElement.dataset.theme = t;
-    document.getElementById('toggle-icon').textContent = t === 'dark' ? '☀️' : '🌙';
-}
-function cssVar(v) {
-    return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-}
+// Cores categóricas para leafs
+const CATEGORICAL_COLORS = {
+    'DRIVER': '#E8873D',         // Laranja
+    'ANTI-DRIVER': '#2E4A60',    // Azul escuro
+    'BAIXA RELEVÂNCIA': '#6B7F8C' // Cinza
+};
 
-// ════════════════════════════════════════════════════════════════
-// CONTROLES — registrados UMA ÚNICA VEZ em initControls()
-// Nunca chamado dentro de renderTree()
-// ════════════════════════════════════════════════════════════════
-function initControls() {
-    // Zoom
-    document.getElementById('btn-zoom-in').addEventListener('click',
-        () => svgEl && svgEl.transition().duration(300).call(zoomBeh.scaleBy, 1.3));
-    document.getElementById('btn-zoom-out').addEventListener('click',
-        () => svgEl && svgEl.transition().duration(300).call(zoomBeh.scaleBy, 0.77));
-    document.getElementById('btn-zoom-fit').addEventListener('click', fitToScreen);
-
-    // Slider Y — espaçamento entre nós irmãos
-    const sY = document.getElementById('slider-y');
-    const vY = document.getElementById('val-y');
-    sY.addEventListener('input', () => {
-        layout.spacingY = +sY.value;
-        vY.textContent  = sY.value;
-        recalcLayout();
-    });
-
-    // Slider X — distância entre níveis
-    const sX = document.getElementById('slider-x');
-    const vX = document.getElementById('val-x');
-    sX.addEventListener('input', () => {
-        layout.spacingX = +sX.value;
-        vX.textContent  = sX.value;
-        if (doUpdate && rootNode) doUpdate(rootNode); // só redesenha (X não muda altura)
-    });
-
-    // Busca
-    const box = document.getElementById('search-box');
-    box.addEventListener('input', () => applySearch(box.value.trim()));
-    document.getElementById('btn-clear-search').addEventListener('click', () => {
-        box.value = '';
-        applySearch('');
-    });
-
-    // Expandir / Colapsar tudo
-    document.getElementById('btn-expand').addEventListener('click', () => {
-        if (!rootNode || !doUpdate) return;
-        rootNode.descendants().forEach(d => {
-            if (d._children) { d.children = d._children; d._children = null; }
-        });
-        doUpdate(rootNode);
-    });
-    document.getElementById('btn-collapse').addEventListener('click', () => {
-        if (!rootNode || !doUpdate) return;
-        rootNode.descendants().forEach(d => {
-            if (d.depth > 0 && d.children) { d._children = d.children; d.children = null; }
-        });
-        doUpdate(rootNode);
-    });
-
-    // Filtro de direção
-    document.getElementById('direcao-select').addEventListener('change', () => {
-        state.direcao = document.getElementById('direcao-select').value || null;
-        if (state.pergunta) loadData();
-    });
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
 }
 
-// Recalcula a altura do SVG quando spacingY muda e dispara update
-function recalcLayout() {
-    if (!rootNode || !doUpdate || !currentTreemap || !svgEl) return;
-    const leaves = rootNode.descendants().filter(d => !d.children && !d._children).length;
-    const newH   = Math.max(leaves * layout.spacingY, 400);
-    currentTreemap.size([newH, 9999]);
-    svgEl.attr('height', newH + MARGIN.top + MARGIN.bottom);
-    doUpdate(rootNode);
+function rgbToHex(r, g, b) {
+    return "#" + ((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1);
 }
 
-// Busca visual
-function applySearch(q) {
-    if (!q) {
+function interpolateColor(color1, color2, factor) {
+    const c1 = hexToRgb(color1);
+    const c2 = hexToRgb(color2);
+    if (!c1 || !c2) return color1;
+    
+    const r = c1.r + factor * (c2.r - c1.r);
+    const g = c1.g + factor * (c2.g - c1.g);
+    const b = c1.b + factor * (c2.b - c1.b);
+    
+    return rgbToHex(r, g, b);
+}
+
+function getColorByScoreGradient(score) {
+    if (score === null || score === undefined) return '#6B7F8C';
+    
+    const s = parseFloat(score);
+    
+    if (s <= COLOR_STOPS[0].score) return COLOR_STOPS[0].color;
+    if (s >= COLOR_STOPS[COLOR_STOPS.length - 1].score) return COLOR_STOPS[COLOR_STOPS.length - 1].color;
+    
+    for (let i = 0; i < COLOR_STOPS.length - 1; i++) {
+        const stop1 = COLOR_STOPS[i];
+        const stop2 = COLOR_STOPS[i + 1];
+        
+        if (s >= stop1.score && s <= stop2.score) {
+            const range = stop2.score - stop1.score;
+            const position = s - stop1.score;
+            const factor = position / range;
+            return interpolateColor(stop1.color, stop2.color, factor);
+        }
+    }
+    
+    return '#6B7F8C';
+}
+
+function getNodeScore(d) {
+    if (!d || !d.data) return 0;
+    
+    if (d.data.leaf) {
+        return safeGet(d, 'data.metrics.score_nexas', 0);
+    } else {
+        return safeGet(d, 'data.metrics.avg_score', 0);
+    }
+}
+
+// COR DOS NÓS (HÍBRIDO)
+function nodeColor(d) {
+    if (!d || !d.data) return '#64748b';
+    
+    // LEAFS: Cor categórica por direção
+    if (d.data.leaf) {
+        const direcao = safeGet(d, 'data.metrics.direcao', '');
+        
+        if (direcao === 'DRIVER') return CATEGORICAL_COLORS['DRIVER'];
+        if (direcao === 'ANTI-DRIVER') return CATEGORICAL_COLORS['ANTI-DRIVER'];
+        return CATEGORICAL_COLORS['BAIXA RELEVÂNCIA'];
+    }
+    
+    // NÓS INTERNOS: Gradiente por avg_score
+    const score = safeGet(d, 'data.metrics.avg_score', 0);
+    const baseColor = getColorByScoreGradient(score);
+    
+    // Se colapsado, escurecer
+    if (d._children) {
+        const rgb = hexToRgb(baseColor);
+        if (rgb) return rgbToHex(rgb.r * 0.7, rgb.g * 0.7, rgb.b * 0.7);
+    }
+    
+    return baseColor;
+}
+
+// COR DAS LINHAS (SEMPRE GRADIENTE)
+function linkColor(d) {
+    if (!d || !d.data) return '#475569';
+    const score = getNodeScore(d);
+    return getColorByScoreGradient(score);
+}
+
+function linkWidth(d) {
+    if (!d || !d.data) return 1.5;
+    const score = getNodeScore(d);
+    const absScore = Math.abs(score);
+    if (absScore < 30) return 1;
+    if (absScore < 200) return 2;
+    if (absScore < 1000) return 3;
+    return 4;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+async function get(url, params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    const res = await fetch(`${url}?${qs}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+}
+
+function safeGet(obj, path, defaultValue = null) {
+    try {
+        return path.split('.').reduce((o, p) => o?.[p], obj) ?? defaultValue;
+    } catch {
+        return defaultValue;
+    }
+}
+
+function wrapText(text, maxCharsPerLine = 35) {
+    if (!text || text.length <= maxCharsPerLine) return [text];
+    
+    const words = text.split(/\s+/);
+    const lines = [];
+    let currentLine = '';
+    
+    words.forEach(word => {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        if (testLine.length <= maxCharsPerLine) {
+            currentLine = testLine;
+        } else {
+            if (currentLine) lines.push(currentLine);
+            currentLine = word;
+        }
+    });
+    
+    if (currentLine) lines.push(currentLine);
+    return lines;
+}
+
+function showLoading(text = 'Carregando...') {
+    const overlay = document.getElementById('loading-overlay');
+    const loadingText = document.getElementById('loading-text');
+    if (overlay && loadingText) {
+        loadingText.textContent = text;
+        overlay.style.display = 'flex';
+    }
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function toggleFullscreen() {
+    isFullscreen = !isFullscreen;
+    document.body.classList.toggle('fullscreen-mode', isFullscreen);
+    if (rootNode && doUpdate) setTimeout(() => fitToScreen(), 100);
+}
+
+function updateURL() {
+    const params = new URLSearchParams();
+    if (state.onda) params.set('onda', state.onda);
+    if (state.assunto) params.set('assunto', state.assunto);
+    if (state.pergunta) params.set('pergunta', state.pergunta);
+    if (state.direcao) params.set('direcao', state.direcao);
+    if (state.agregacao && state.agregacao !== 'weighted_mean') params.set('agregacao', state.agregacao);
+    const newURL = window.location.pathname + '?' + params.toString();
+    window.history.replaceState({}, '', newURL);
+}
+
+function getAgregacaoLabel() {
+    const labels = {
+        'weighted_mean': 'Média Ponderada',
+        'mean': 'Média Simples',
+        'median': 'Mediana',
+        'max': 'Máximo'
+    };
+    return labels[state.agregacao] || 'Média';
+}
+
+function showTip(ev, d) {
+    if (!d || !d.data) return;
+    const m = d.data.metrics;
+    if (!m) return;
+    
+    const score = getNodeScore(d);
+    const scoreColor = d.data.leaf ? nodeColor(d) : getColorByScoreGradient(score);
+    
+    let h = `<div class="t-title">${d.data.name || 'Sem nome'}</div>`;
+    
+    if (d.data.leaf) {
+        h += `<div class="t-row">Score Nexas: <em style="color:${scoreColor};font-weight:bold">${score.toFixed(2)}</em></div>`;
+        h += `<div class="t-row">Direção: <em style="color:${scoreColor};font-weight:bold">${m.direcao || 'N/A'}</em></div>`;
+        h += `<div class="t-row">Categoria: <em>${m.categoria_direcao || 'N/A'}</em></div>`;
+        h += `<div class="t-row">Lift: <em>${(m.lift || 0).toFixed(3)}</em></div>`;
+        h += `<div class="t-row">Relevância: <em>${((m.relevancia || 0)*100).toFixed(1)}%</em></div>`;
+        if (m.base_comum) h += `<div class="t-row">Base: <em>${m.base_comum}</em></div>`;
+    } else {
+        h += `<div class="t-row">Score Médio (${getAgregacaoLabel()}): <em style="color:${scoreColor};font-weight:bold">${score.toFixed(2)}</em></div>`;
+        
+        if (m.min_score !== undefined && m.max_score !== undefined) {
+            h += `<div class="t-row">Range: <em>${m.min_score.toFixed(0)} a ${m.max_score.toFixed(0)}</em></div>`;
+        }
+        
+        if (m.median_score !== undefined && m.median_score !== m.avg_score) {
+            h += `<div class="t-row">Mediana: <em>${m.median_score.toFixed(2)}</em></div>`;
+        }
+        
+        if (m.std_dev !== undefined && m.std_dev > 0) {
+            const cv = m.std_dev / Math.abs(m.avg_score || 1);
+            const consistencia = cv < 0.3 ? '✓ Consistente' : cv < 0.7 ? '⚠️ Variável' : '⚠️ Alta variação';
+            h += `<div class="t-row">Desvio padrão: <em>${m.std_dev.toFixed(1)}</em> ${consistencia}</div>`;
+        }
+        
+        h += `<div class="t-row">Relevância média: <em>${((m.avg_relevancia || 0)*100).toFixed(1)}%</em></div>`;
+        h += `<div class="t-row">Associações: <em>${m.count || 0}</em></div>`;
+        h += `<div class="t-hint">Clique para expandir / colapsar</div>`;
+    }
+    
+    tipEl.innerHTML = h;
+    tipEl.style.opacity = '1';
+    tipEl.style.left = `${ev.clientX + 16}px`;
+    tipEl.style.top = `${ev.clientY - 10}px`;
+}
+
+function hideTip() {
+    if (tipEl) tipEl.style.opacity = '0';
+}
+
+function doSearch(query) {
+    if (!rootNode) return;
+    
+    const ql = query.toLowerCase();
+    if (!ql) {
         d3.selectAll('.node').classed('highlighted', false).classed('dimmed', false);
         return;
     }
-    const ql = q.toLowerCase();
+    
+    const matches = [];
+    rootNode.descendants().forEach(d => {
+        if (d.data && d.data.name && d.data.name.toLowerCase().includes(ql)) matches.push(d);
+    });
+    
+    if (matches.length === 0) {
+        d3.selectAll('.node').classed('highlighted', false).classed('dimmed', true);
+        return;
+    }
+    
+    const firstMatch = matches[0];
+    let node = firstMatch;
+    while (node) {
+        if (node._children) {
+            node.children = node._children;
+            node._children = null;
+        }
+        node = node.parent;
+    }
+    
+    doUpdate(firstMatch);
+    
     d3.selectAll('.node')
-        .classed('highlighted', d => d.data.name.toLowerCase().includes(ql))
-        .classed('dimmed',      d => !d.data.name.toLowerCase().includes(ql));
+        .classed('highlighted', d => d.data && d.data.name && d.data.name.toLowerCase().includes(ql))
+        .classed('dimmed', d => !d.data || !d.data.name || !d.data.name.toLowerCase().includes(ql));
+    
+    setTimeout(() => {
+        if (svgEl && zoomBeh && firstMatch) {
+            const container = document.getElementById('svg-container');
+            const scale = d3.zoomTransform(svgEl.node()).k;
+            const tx = container.clientWidth / 2 - firstMatch.y * scale;
+            const ty = container.clientHeight / 2 - firstMatch.x * scale;
+            svgEl.transition().duration(500)
+                .call(zoomBeh.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+        }
+    }, 400);
+}
+
+function exportToPNG() {
+    const svgElement = document.querySelector('#svg-container svg');
+    if (!svgElement) {
+        alert('Nenhum dendrograma para exportar');
+        return;
+    }
+    
+    showLoading('Gerando imagem...');
+    
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    const img = new Image();
+    const svg = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svg);
+    
+    img.onload = function() {
+        canvas.width = svgElement.clientWidth;
+        canvas.height = svgElement.clientHeight;
+        ctx.drawImage(img, 0, 0);
+        
+        canvas.toBlob(function(blob) {
+            const link = document.createElement('a');
+            link.download = `dendrograma_${state.onda}_${Date.now()}.png`;
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            hideLoading();
+        });
+        
+        URL.revokeObjectURL(url);
+    };
+    
+    img.src = url;
+}
+
+document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
+        if (e.key !== 'Escape') return;
+    }
+    
+    switch(e.key.toLowerCase()) {
+        case 'f':
+            e.preventDefault();
+            toggleFullscreen();
+            break;
+        case 'e':
+            e.preventDefault();
+            document.getElementById('btn-expand')?.click();
+            break;
+        case 'c':
+            e.preventDefault();
+            document.getElementById('btn-collapse')?.click();
+            break;
+        case 'z':
+            e.preventDefault();
+            fitToScreen();
+            break;
+        case '/':
+            e.preventDefault();
+            document.getElementById('search-box')?.focus();
+            break;
+        case 'escape':
+            if (isFullscreen) toggleFullscreen();
+            break;
+    }
+});
+
+async function loadData() {
+    const p = { 
+        onda: state.onda, 
+        assunto: state.assunto, 
+        pergunta: state.pergunta, 
+        direcao: state.direcao,
+        agregacao: state.agregacao
+    };
+    try {
+        showLoading('Carregando dados...');
+        const [tree, met] = await Promise.all([
+            get(`${API}/tree`, p),
+            get(`${API}/metricas`, p),
+        ]);
+        
+        console.log('✅ Dados recebidos:', tree);
+        
+        if (!tree || !tree.tree) {
+            throw new Error('Estrutura de dados inválida');
+        }
+        
+        renderTree(tree);
+        renderMetrics(met);
+        updateContexto(tree.contexto);
+        hideLoading();
+    } catch(e) {
+        hideLoading();
+        const msg = `Erro ao carregar: ${e.message}`;
+        document.getElementById('contexto').textContent = msg;
+        console.error('❌ Erro completo:', e);
+    }
+}
+
+function renderTree(data) {
+    const container = document.getElementById('svg-container');
+    container.innerHTML = '';
+
+    const width = container.clientWidth;
+    const height = Math.max(container.clientHeight, 600);
+
+    try {
+        rootNode = d3.hierarchy(data.tree);
+        if (!rootNode) {
+            throw new Error('Falha ao criar hierarquia');
+        }
+        
+        rootNode.x0 = height / 2;
+        rootNode.y0 = 0;
+
+        svgEl = d3.select(container).append('svg')
+            .attr('width', '100%')
+            .attr('height', height)
+            .style('background', 'transparent');
+
+        const g = svgEl.append('g');
+
+        zoomBeh = d3.zoom()
+            .scaleExtent([0.1, 5])
+            .on('zoom', (event) => g.attr('transform', event.transform));
+
+        svgEl.call(zoomBeh);
+
+        doUpdate = function(source) {
+            const treeLayout = d3.tree().nodeSize([layout.spacingY, layout.spacingX]);
+            treeLayout(rootNode);
+
+            const nodes = rootNode.descendants();
+            const links = rootNode.links();
+
+            const link = g.selectAll('.link')
+                .data(links, d => d.target.data.name);
+
+            link.exit().transition().duration(300)
+                .attr('d', () => {
+                    const o = { x: source.x, y: source.y };
+                    return diagonal(o, o);
+                })
+                .style('opacity', 0)
+                .remove();
+
+            const linkEnter = link.enter().insert('path', 'g')
+                .attr('class', 'link')
+                .attr('d', () => {
+                    const o = { x: source.x0, y: source.y0 };
+                    return diagonal(o, o);
+                })
+                .style('opacity', 0)
+                .style('fill', 'none');
+
+            const linkUpdate = linkEnter.merge(link);
+
+            linkUpdate.transition().duration(300)
+                .attr('d', d => diagonal(d.source, d.target))
+                .style('opacity', 1)
+                .style('stroke', d => linkColor(d.target))
+                .style('stroke-width', d => linkWidth(d.target));
+
+            const node = g.selectAll('.node')
+                .data(nodes, d => d.data.name);
+
+            node.exit().transition().duration(300)
+                .attr('transform', () => `translate(${source.y},${source.x})`)
+                .style('opacity', 0)
+                .remove();
+
+            const nodeEnter = node.enter().append('g')
+                .attr('class', 'node')
+                .attr('transform', () => `translate(${source.y0},${source.x0})`)
+                .style('opacity', 0)
+                .style('cursor', 'pointer')
+                .on('click', (event, d) => {
+                    if (d.children) {
+                        d._children = d.children;
+                        d.children = null;
+                    } else if (d._children) {
+                        d.children = d._children;
+                        d._children = null;
+                    }
+                    doUpdate(d);
+                })
+                .on('mouseover', (event, d) => showTip(event, d))
+                .on('mousemove', (event) => {
+                    tipEl.style.left = `${event.clientX + 16}px`;
+                    tipEl.style.top = `${event.clientY - 10}px`;
+                })
+                .on('mouseout', hideTip);
+
+            nodeEnter.append('circle')
+                .attr('r', 5)
+                .style('stroke', '#1e293b')
+                .style('stroke-width', 1.5);
+
+            nodeEnter.each(function(d) {
+                const textGroup = d3.select(this);
+                const lines = wrapText(d.data.name || '', 35);
+                const isLeft = d.children || d._children;
+                
+                lines.forEach((line, i) => {
+                    textGroup.append('text')
+                        .attr('class', 'node-text-line')
+                        .attr('dy', `${i * 1.1}em`)
+                        .attr('x', isLeft ? -8 : 8)
+                        .attr('text-anchor', isLeft ? 'end' : 'start')
+                        .text(line)
+                        .style('font-size', '12px')
+                        .style('fill', '#e2e8f0')
+                        .style('pointer-events', 'none');
+                });
+            });
+
+            const nodeUpdate = nodeEnter.merge(node);
+
+            nodeUpdate.transition().duration(300)
+                .attr('transform', d => `translate(${d.y},${d.x})`)
+                .style('opacity', 1);
+
+            nodeUpdate.select('circle')
+                .style('fill', nodeColor);
+
+            nodes.forEach(d => {
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+
+            function diagonal(s, d) {
+                return `M ${s.y} ${s.x}
+                        C ${(s.y + d.y) / 2} ${s.x},
+                          ${(s.y + d.y) / 2} ${d.x},
+                          ${d.y} ${d.x}`;
+            }
+        };
+
+        doUpdate(rootNode);
+        
+        console.log('🎨 Árvore renderizada com sistema HÍBRIDO');
+        console.log('  Leafs: categórico (Driver/Anti-driver)');
+        console.log('  Internos: gradiente (avg_score)');
+        console.log('  Linhas: gradiente (intensidade)');
+        
+    } catch(e) {
+        console.error('❌ Erro ao renderizar:', e);
+        container.innerHTML = `<div class="viz-placeholder">Erro: ${e.message}</div>`;
+    }
 }
 
 function fitToScreen() {
-    if (!svgEl || !gTree) return;
-    const c   = document.getElementById('svg-container');
-    const box = gTree.node().getBBox();
-    const sc  = Math.min(c.clientWidth / (box.width + 80), c.clientHeight / (box.height + 80), 1.5) * 0.9;
-    const tx  = (c.clientWidth  - box.width  * sc) / 2 - box.x * sc + MARGIN.left;
-    const ty  = (c.clientHeight - box.height * sc) / 2 - box.y * sc + MARGIN.top;
-    svgEl.transition().duration(500)
-        .call(zoomBeh.transform, d3.zoomIdentity.translate(tx, ty).scale(sc));
+    if (!svgEl || !zoomBeh || !rootNode) return;
+    try {
+        const container = document.getElementById('svg-container');
+        const bounds = svgEl.select('g').node().getBBox();
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        const fullWidth = bounds.width;
+        const fullHeight = bounds.height;
+        const midX = bounds.x + fullWidth / 2;
+        const midY = bounds.y + fullHeight / 2;
+        const scale = 0.9 / Math.max(fullWidth / width, fullHeight / height);
+        const tx = width / 2 - midX * scale;
+        const ty = height / 2 - midY * scale;
+        svgEl.transition().duration(500).call(zoomBeh.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+    } catch(e) {
+        console.error('Erro no fit:', e);
+    }
 }
 
-// ════════════════════════════════════════════════════════════════
-// FETCH
-// ════════════════════════════════════════════════════════════════
-async function get(endpoint, params = {}) {
-    const url = new URL(endpoint, window.location.origin);
-    Object.entries(params).forEach(([k,v]) => { if (v != null) url.searchParams.set(k, v); });
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(`API ${r.status}`);
-    return r.json();
+function renderMetrics(met) {
+    document.getElementById('met-total').textContent = (met.total_cruzamentos || 0).toLocaleString();
+    document.getElementById('met-drivers').textContent = (met.total_drivers || 0).toLocaleString();
+    document.getElementById('met-anti').textContent = (met.total_anti_drivers || 0).toLocaleString();
+    document.getElementById('met-score').textContent = (met.top_score || 0).toFixed(0);
 }
 
-// ════════════════════════════════════════════════════════════════
-// STATE & FILTROS
-// ════════════════════════════════════════════════════════════════
-const state = { onda: null, assunto: null, pergunta: null, direcao: null };
+function updateContexto(ctx) {
+    document.getElementById('contexto').textContent = 
+        `${ctx.assunto_coluna} → ${ctx.pergunta_coluna} | Onda: ${ctx.onda}`;
+}
 
 async function init() {
+    tipEl = document.getElementById('tooltip');
+    
     initTheme();
     initControls();
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const ondaParam = urlParams.get('onda');
+    const assuntoParam = urlParams.get('assunto');
+    const perguntaParam = urlParams.get('pergunta');
+    const direcaoParam = urlParams.get('direcao');
+    const agregacaoParam = urlParams.get('agregacao');
 
     try {
         const ondas = await get(`${API}/ondas`);
@@ -239,307 +760,180 @@ async function init() {
         ondas.forEach(o => {
             const opt = document.createElement('option');
             opt.value = o.codigo;
-            opt.textContent = `${o.codigo}  (${(o.total_registros||0).toLocaleString()} reg.)`;
+            opt.textContent = `${o.codigo} (${(o.total_registros||0).toLocaleString()} reg.)`;
             sel.appendChild(opt);
         });
+        
         sel.addEventListener('change', async e => {
             state.onda = e.target.value;
+            updateURL();
             if (!state.onda) return;
             const f = await get(`${API}/filtros`, { onda: state.onda });
             buildAssuntoSelect(f);
         });
+        
+        if (ondaParam) {
+            sel.value = ondaParam;
+            state.onda = ondaParam;
+            const f = await get(`${API}/filtros`, { onda: state.onda });
+            await buildAssuntoSelect(f);
+            
+            if (assuntoParam) {
+                document.getElementById('assunto-select').value = assuntoParam;
+                state.assunto = assuntoParam;
+                const perguntas = JSON.parse(document.getElementById('assunto-select').dataset.perguntas);
+                await buildPerguntaSelect(perguntas[state.assunto] || []);
+                
+                if (perguntaParam) {
+                    document.getElementById('pergunta-select').value = perguntaParam;
+                    state.pergunta = perguntaParam;
+                    
+                    if (direcaoParam) {
+                        document.getElementById('direcao-select').value = direcaoParam;
+                        state.direcao = direcaoParam;
+                    }
+                    
+                    if (agregacaoParam) {
+                        document.getElementById('agregacao-select').value = agregacaoParam;
+                        state.agregacao = agregacaoParam;
+                    }
+                    
+                    loadData();
+                }
+            }
+        }
+        
     } catch(e) {
         document.getElementById('contexto').textContent = 'Erro ao conectar com a API.';
-        console.error(e);
+        console.error('Erro na inicialização:', e);
     }
 }
 
-// Reconstrói o select de assunto sem acumular listeners (replaceWith)
-function buildAssuntoSelect(filtros) {
-    let sel = document.getElementById('assunto-select');
+async function buildAssuntoSelect(filtros) {
+    const sel = document.getElementById('assunto-select');
+    sel.disabled = false;
     sel.innerHTML = '<option value="">Selecione o assunto</option>';
+    sel.dataset.perguntas = JSON.stringify(filtros.perguntas);
     filtros.assuntos.forEach(a => {
-        const o = document.createElement('option');
-        o.value = a; o.textContent = a; sel.appendChild(o);
+        const opt = document.createElement('option');
+        opt.value = a;
+        opt.textContent = a;
+        sel.appendChild(opt);
     });
-    sel.disabled = false;
-
-    const clone = sel.cloneNode(true);
-    sel.parentNode.replaceChild(clone, sel);
-    clone.dataset.perguntas = JSON.stringify(filtros.perguntas);
-    clone.addEventListener('change', e => {
+    sel.addEventListener('change', e => {
         state.assunto = e.target.value;
+        updateURL();
         if (!state.assunto) return;
-        buildPerguntaSelect(JSON.parse(e.target.dataset.perguntas)[state.assunto] || []);
+        const perguntas = JSON.parse(sel.dataset.perguntas);
+        buildPerguntaSelect(perguntas[state.assunto] || []);
     });
 }
 
-function buildPerguntaSelect(lista) {
-    let sel = document.getElementById('pergunta-select');
-    sel.innerHTML = '<option value="">Selecione a pergunta</option>';
-    lista.forEach(p => {
-        const o = document.createElement('option');
-        o.value = p; o.textContent = p; sel.appendChild(o);
-    });
+async function buildPerguntaSelect(perguntas) {
+    const sel = document.getElementById('pergunta-select');
     sel.disabled = false;
-
-    const clone = sel.cloneNode(true);
-    sel.parentNode.replaceChild(clone, sel);
-    clone.addEventListener('change', e => {
+    sel.innerHTML = '<option value="">Selecione a pergunta</option>';
+    perguntas.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        sel.appendChild(opt);
+    });
+    sel.addEventListener('change', e => {
         state.pergunta = e.target.value;
-        if (!state.pergunta) return;
-        state.direcao = document.getElementById('direcao-select').value || null;
-        loadData();
+        updateURL();
+        if (state.pergunta) loadData();
     });
 }
 
-// ════════════════════════════════════════════════════════════════
-// CARREGAR DADOS
-// ════════════════════════════════════════════════════════════════
-async function loadData() {
-    const p = { onda: state.onda, assunto: state.assunto, pergunta: state.pergunta, direcao: state.direcao };
-    try {
-        const [tree, met] = await Promise.all([
-            get(`${API}/tree`,     p),
-            get(`${API}/metricas`, p),
-        ]);
-        document.getElementById('contexto').innerHTML =
-            `<strong>${tree.contexto.assunto_coluna}</strong> → ` +
-            `<strong>${tree.contexto.pergunta_coluna}</strong>` +
-            (state.direcao ? `  |  <strong>${state.direcao}</strong>` : '');
-
-        document.getElementById('met-total').textContent   = met.total_cruzamentos.toLocaleString();
-        document.getElementById('met-drivers').textContent = met.total_drivers.toLocaleString();
-        document.getElementById('met-anti').textContent    = met.total_anti_drivers.toLocaleString();
-        document.getElementById('met-score').textContent   = met.top_score.toFixed(1);
-
-        renderTree(tree.tree);
-    } catch(e) {
-        console.error(e);
-        document.getElementById('svg-container').innerHTML =
-            '<div class="viz-placeholder">Erro ao carregar dados. Veja o console.</div>';
-    }
+function initTheme() {
+    const btn = document.getElementById('theme-toggle');
+    const icon = document.getElementById('toggle-icon');
+    btn.addEventListener('click', () => {
+        const isDark = document.documentElement.dataset.theme === 'dark';
+        document.documentElement.dataset.theme = isDark ? 'light' : 'dark';
+        icon.textContent = isDark ? '🌙' : '☀️';
+    });
 }
 
-// ════════════════════════════════════════════════════════════════
-// D3 COLLAPSIBLE TREE
-// Nenhum controle externo é registrado aqui.
-// Expõe doUpdate e rootNode globalmente para que os controles
-// registrados em initControls() possam redesenhar.
-// ════════════════════════════════════════════════════════════════
-function renderTree(data) {
-    const container = document.getElementById('svg-container');
-    container.innerHTML = '';
-    nodeIdSeq = 0;
-
-    const countLeaves = n =>
-        (!n.children?.length) ? 1 : n.children.reduce((s,c) => s + countLeaves(c), 0);
-
-    const H = Math.max(countLeaves(data) * layout.spacingY, 400);
-
-    const treemap = d3.tree().size([H, 9999]);
-    currentTreemap = treemap;
-
-    const svg = d3.select(container).append('svg')
-        .attr('width',  '100%')
-        .attr('height', H + MARGIN.top + MARGIN.bottom);
-    svgEl = svg;
-
-    const g = svg.append('g').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
-    gTree = g;
-
-    zoomBeh = d3.zoom()
-        .scaleExtent([0.05, 6])
-        .on('zoom', ev => {
-            g.attr('transform', ev.transform);
-            document.getElementById('zoom-pct').textContent =
-                `${Math.round(ev.transform.k * 100)}%`;
+function initControls() {
+    document.getElementById('slider-y').addEventListener('input', e => {
+        layout.spacingY = +e.target.value;
+        document.getElementById('val-y').textContent = e.target.value;
+        if (rootNode && doUpdate) doUpdate(rootNode);
+    });
+    
+    document.getElementById('slider-x').addEventListener('input', e => {
+        layout.spacingX = +e.target.value;
+        document.getElementById('val-x').textContent = e.target.value;
+        if (rootNode && doUpdate) doUpdate(rootNode);
+    });
+    
+    document.getElementById('btn-zoom-in').addEventListener('click', () => {
+        if (!svgEl || !zoomBeh) return;
+        svgEl.transition().call(zoomBeh.scaleBy, 1.3);
+    });
+    
+    document.getElementById('btn-zoom-out').addEventListener('click', () => {
+        if (!svgEl || !zoomBeh) return;
+        svgEl.transition().call(zoomBeh.scaleBy, 0.7);
+    });
+    
+    document.getElementById('btn-zoom-fit').addEventListener('click', fitToScreen);
+    
+    document.getElementById('btn-expand').addEventListener('click', () => {
+        if (!rootNode || !doUpdate) return;
+        rootNode.descendants().forEach(d => {
+            if (d._children) {
+                d.children = d._children;
+                d._children = null;
+            }
         });
-    svg.call(zoomBeh);
-    svg.on('wheel.zoom', null); // roda = scroll, não zoom
-
-    rootNode = d3.hierarchy(data, d => d.children);
-    rootNode.x0 = H / 2;
-    rootNode.y0 = 0;
-
-    // Colapsar tudo abaixo do nível 1
-    if (rootNode.children) {
-        rootNode.children.forEach(c => { if (c.children) c.children.forEach(collapseNode); });
-    }
-
-    // ── update exposta globalmente ──────────────────────────────
-    doUpdate = function update(source) {
-        const tl    = treemap(rootNode);
-        const nodes = tl.descendants();
-        const links = tl.descendants().slice(1);
-
-        // Aplica spacingX: posição horizontal = profundidade × spacingX
-        nodes.forEach(d => { d.y = d.depth * layout.spacingX; });
-
-        // ── NÓS ───────────────────────────────────────────────
-        const node = g.selectAll('g.node')
-            .data(nodes, d => d.id || (d.id = ++nodeIdSeq));
-
-        const enter = node.enter().append('g')
-            .attr('class', 'node')
-            .attr('transform', `translate(${source.y0 ?? 0},${source.x0 ?? 0})`)
-            .on('click', (_, d) => {
-                if (d.children)  { d._children = d.children;  d.children  = null; }
-                else              { d.children  = d._children; d._children = null; }
-                doUpdate(d);
-            })
-            .on('mousemove',  (ev, d) => showTip(ev, d))
-            .on('mouseleave', hideTip);
-
-        enter.append('circle').attr('r', 1e-6);
-        enter.each(function(d) { buildLabel(d3.select(this), d); });
-
-        const merged = enter.merge(node);
-        merged.transition().duration(DURATION)
-            .attr('transform', d => `translate(${d.y},${d.x})`);
-        merged.select('circle')
-            .attr('r', d => d.data.leaf ? 5 : 8)
-            .style('fill',   d => nodeColor(d))
-            .style('stroke', d => d.data.leaf
-                ? scoreColor(d.data.metrics?.categoria_direcao)
-                : cssVar('--node-stroke'));
-        merged.selectAll('text').style('fill', cssVar('--text-secondary'));
-
-        node.exit().transition().duration(DURATION)
-            .attr('transform', `translate(${source.y},${source.x})`).remove();
-
-        // ── LINKS ─────────────────────────────────────────────
-        const link = g.selectAll('path.link').data(links, d => d.id);
-        const lEnter = link.enter().insert('path','g')
-            .attr('class','link')
-            .attr('d', () => { const o={x:source.x0??0,y:source.y0??0}; return bez(o,o); });
-
-        lEnter.merge(link).transition().duration(DURATION)
-            .attr('d', d => bez(d, d.parent))
-            .style('stroke',       d => linkColor(d))
-            .style('stroke-width', d => linkWidth(d));
-
-        link.exit().transition().duration(DURATION)
-            .attr('d', () => { const o={x:source.x,y:source.y}; return bez(o,o); }).remove();
-
-        nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
-    };
-
-    doUpdate(rootNode);
-}
-
-// ════════════════════════════════════════════════════════════════
-// HELPERS D3
-// ════════════════════════════════════════════════════════════════
-function collapseNode(d) {
-    if (d.children) {
-        d._children = d.children;
-        d._children.forEach(collapseNode);
-        d.children = null;
-    }
-}
-
-function bez(s, d) {
-    const mx = (s.y + d.y) / 2;
-    return `M${s.y},${s.x} C${mx},${s.x} ${mx},${d.x} ${d.y},${d.x}`;
-}
-
-function buildLabel(sel, d) {
-    const isParent = !!(d.children || d._children);
-    const xOff     = isParent ? -13 : 13;
-    const anchor   = isParent ? 'end' : 'start';
-    const lines    = wrapText(d.data.name || '', 36);
-    const midLine  = (lines.length - 1) / 2;
-    const tg = sel.append('g').attr('class','label-g');
-
-    lines.forEach((ln, i) => {
-        tg.append('text')
-            .attr('x', xOff)
-            .attr('dy', `${(i - midLine) * 1.25}em`)
-            .attr('text-anchor', anchor)
-            .style('fill', cssVar('--text-secondary'))
-            .text(ln);
+        doUpdate(rootNode);
     });
-
-    if (d.data.leaf && d.data.metrics?.score_nexas != null) {
-        tg.append('text')
-            .attr('x', xOff)
-            .attr('dy', `${(lines.length / 2 + 0.55) * 1.25}em`)
-            .attr('text-anchor', anchor)
-            .style('fill', scoreColor(d.data.metrics.categoria_direcao))
-            .style('font-size', '10px')
-            .style('font-weight', '700')
-            .text(`Score ${d.data.metrics.score_nexas.toFixed(1)}`);
-    }
+    
+    document.getElementById('btn-collapse').addEventListener('click', () => {
+        if (!rootNode || !doUpdate) return;
+        rootNode.descendants().forEach((d, i) => {
+            if (i > 0 && d.children) {
+                d._children = d.children;
+                d.children = null;
+            }
+        });
+        doUpdate(rootNode);
+    });
+    
+    document.getElementById('search-box').addEventListener('input', e => doSearch(e.target.value));
+    document.getElementById('btn-clear-search').addEventListener('click', () => {
+        document.getElementById('search-box').value = '';
+        doSearch('');
+    });
+    
+    document.getElementById('direcao-select').addEventListener('change', e => {
+        state.direcao = e.target.value || null;
+        updateURL();
+        if (state.pergunta) loadData();
+    });
+    
+    document.getElementById('agregacao-select').addEventListener('change', e => {
+        state.agregacao = e.target.value;
+        updateURL();
+        if (state.pergunta) {
+            showLoading('Recalculando com ' + getAgregacaoLabel() + '...');
+            loadData();
+        }
+    });
+    
+    document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
+    document.getElementById('btn-exit-fullscreen').addEventListener('click', toggleFullscreen);
+    document.getElementById('btn-export').addEventListener('click', exportToPNG);
 }
 
-function wrapText(text, max) {
-    if (text.length <= max) return [text];
-    const words = text.split(' ');
-    const lines = []; let cur = '';
-    for (const w of words) {
-        const c = cur ? `${cur} ${w}` : w;
-        if (c.length <= max) { cur = c; }
-        else { if (cur) lines.push(cur); cur = w; }
-    }
-    if (cur) lines.push(cur);
-    return lines.length ? lines : [text.slice(0, max) + '…'];
-}
+console.log('🎨 NEXAS Analytics v2.0 - Sistema HÍBRIDO ativado');
+console.log('├─ Leafs: cor categórica (Driver/Anti-driver)');
+console.log('├─ Nós internos: gradiente (avg_score)');
+console.log('└─ Linhas: gradiente (intensidade)');
 
-function nodeColor(d) {
-    if (d._children)  return cssVar('--node-collapsed');
-    if (d.data.leaf)  return leafColor(d.data.metrics?.categoria_direcao);
-    return cssVar('--node-internal');
-}
-function leafColor(dir) {
-    if (!dir) return cssVar('--baixa');
-    if (dir.includes('FORTE'))     return cssVar('--driver-forte');
-    if (dir.includes('RELEVANTE')) return cssVar('--driver-rel');
-    if (dir.includes('MODERADO'))  return cssVar('--driver-mod');
-    if (dir.includes('ANTI'))      return cssVar('--anti-driver');
-    return cssVar('--baixa');
-}
-function scoreColor(dir) { return leafColor(dir); }
-function linkColor(d) {
-    if (!d.data.leaf) return cssVar('--link-default');
-    const dir = d.data.metrics?.categoria_direcao || '';
-    if (dir.includes('FORTE'))     return cssVar('--driver-forte');
-    if (dir.includes('RELEVANTE')) return cssVar('--driver-rel');
-    return cssVar('--link-default');
-}
-function linkWidth(d) {
-    if (!d.data.leaf || !d.data.metrics?.score_nexas) return 1.5;
-    return Math.min(Math.max(Math.abs(d.data.metrics.score_nexas) / 250, 1), 5);
-}
-
-// ════════════════════════════════════════════════════════════════
-// TOOLTIP
-// ════════════════════════════════════════════════════════════════
-const tipEl = document.getElementById('tooltip');
-function showTip(ev, d) {
-    const m = d.data.metrics;
-    if (!m) return;
-    let h = `<div class="t-title">${d.data.name}</div>`;
-    if (d.data.leaf) {
-        h += `<div class="t-row">Score Nexas: <em>${m.score_nexas.toFixed(2)}</em></div>`;
-        h += `<div class="t-row">Lift: <em>${m.lift.toFixed(3)}</em></div>`;
-        h += `<div class="t-row">Relevância: <em>${(m.relevancia*100).toFixed(1)}%</em></div>`;
-        h += `<div class="t-row">Direção: <em style="color:${scoreColor(m.categoria_direcao)}">${m.categoria_direcao}</em></div>`;
-        if (m.base_comum) h += `<div class="t-row">Base: <em>${m.base_comum}</em></div>`;
-    } else {
-        h += `<div class="t-row">Score médio: <em>${m.avg_score.toFixed(2)}</em></div>`;
-        h += `<div class="t-row">Relevância média: <em>${(m.avg_relevancia*100).toFixed(1)}%</em></div>`;
-        h += `<div class="t-row">Associações: <em>${m.count}</em></div>`;
-        h += `<div class="t-hint">Clique para expandir / colapsar</div>`;
-    }
-    tipEl.innerHTML = h;
-    tipEl.style.opacity = '1';
-    tipEl.style.left = `${ev.clientX + 16}px`;
-    tipEl.style.top  = `${ev.clientY - 10}px`;
-}
-function hideTip() { tipEl.style.opacity = '0'; }
-
-// ════════════════════════════════════════════════════════════════
 init();
 </script>
 </body>

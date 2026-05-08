@@ -36,7 +36,10 @@ class NodeMetrics(BaseModel):
     avg_score: float
     avg_relevancia: float
     count: int                 # quantos leaves existem abaixo desse nó
-
+    min_score: float = 0
+    max_score: float = 0
+    median_score: float = 0
+    std_dev: float = 0
 
 class TreeNode(BaseModel):
     """

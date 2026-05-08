@@ -15,21 +15,21 @@ from backend.services.aggregator import get_metricas_resumo
 
 router = APIRouter(prefix="/api", tags=["visualizações"])
 
-
 @router.get("/tree", response_model=TreeResponse)
+
 def get_tree(
     onda: str = Query(..., description="Código da onda"),
     assunto: str = Query(..., description="ASSUNTO_COLUNA"),
     pergunta: str = Query(..., description="PERGUNTA_COLUNA"),
     direcao: str | None = Query(None, description="DRIVER, ANTI-DRIVER ou vazio para todos"),
+    agregacao: str = Query("weighted_mean", description="Método: weighted_mean, mean, median, max"),  # ← NOVO
     db: Session = Depends(get_db),
 ):
     """
     Retorna a árvore hierárquica completa para um cruzamento.
-    Usado pelo dendrograma E pelo sunburst — ambos consomem o mesmo JSON.
     """
     try:
-        return build_tree(db, onda, assunto, pergunta, direcao)
+        return build_tree(db, onda, assunto, pergunta, direcao, agregacao)  # ← Passar agregacao
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
