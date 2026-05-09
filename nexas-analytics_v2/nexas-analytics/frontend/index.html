@@ -4,8 +4,561 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEXAS Analytics v2.0 - Híbrido</title>
-    <link rel="stylesheet" href="css/style.css">
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* ═══════════════════════════════════════════════════════════
+           CSS VARIABLES - TEMA ESCURO E CLARO
+           ═══════════════════════════════════════════════════════════ */
+        
+        :root[data-theme="dark"] {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #e2e8f0;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: #475569;
+            --hover-bg: #334155;
+            --input-bg: #1e293b;
+            --input-border: #475569;
+            --svg-bg: #0f172a;
+            --node-stroke: #1e293b;
+        }
+        
+        :root[data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-tertiary: #475569;
+            --text-muted: #94a3b8;
+            --border-color: #cbd5e1;
+            --hover-bg: #f1f5f9;
+            --input-bg: #ffffff;
+            --input-border: #cbd5e1;
+            --svg-bg: #ffffff;
+            --node-stroke: #e2e8f0;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           RESET E BASE
+           ═══════════════════════════════════════════════════════════ */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           HEADER
+           ═══════════════════════════════════════════════════════════ */
+        
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+        
+        .header-right {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           CONTEXTO
+           ═══════════════════════════════════════════════════════════ */
+        
+        .contexto {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 2rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           FILTROS
+           ═══════════════════════════════════════════════════════════ */
+        
+        .filtros {
+            background: var(--bg-primary);
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .filtros select {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--input-border);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filtros select:hover {
+            background: var(--hover-bg);
+        }
+        
+        .filtros select:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           MÉTRICAS
+           ═══════════════════════════════════════════════════════════ */
+        
+        .metricas {
+            display: flex;
+            gap: 1.5rem;
+            padding: 1.5rem 2rem;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .metrica-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        
+        .metrica-item .valor {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+        
+        .metrica-item .label {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        
+        .cor-driver {
+            color: #E8873D !important;
+        }
+        
+        .cor-anti {
+            color: #2E4A60 !important;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           VISUALIZAÇÃO
+           ═══════════════════════════════════════════════════════════ */
+        
+        .viz-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 250px);
+        }
+        
+        .viz-toolbar {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 2rem;
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            transition: all 0.3s ease;
+        }
+        
+        .toolbar-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .toolbar-label {
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: color 0.3s ease;
+        }
+        
+        .zoom-btn, .btn-sm {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .zoom-btn:hover, .btn-sm:hover {
+            background: var(--hover-bg);
+            transform: translateY(-1px);
+        }
+        
+        .zoom-pct {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            min-width: 45px;
+            text-align: center;
+            transition: color 0.3s ease;
+        }
+        
+        .slider-val {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            min-width: 30px;
+            transition: color 0.3s ease;
+        }
+        
+        input[type="range"] {
+            width: 100px;
+            cursor: pointer;
+        }
+        
+        .search-box {
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--input-border);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            width: 200px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-box:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        
+        .search-box::placeholder {
+            color: var(--text-muted);
+        }
+        
+        select.btn-sm {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.85rem;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           LEGENDA
+           ═══════════════════════════════════════════════════════════ */
+        
+        .legenda {
+            display: flex;
+            gap: 1rem;
+            margin-left: auto;
+        }
+        
+        .legenda-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            transition: color 0.3s ease;
+        }
+        
+        .legenda-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           CONTAINER SVG
+           ═══════════════════════════════════════════════════════════ */
+        
+        .viz-svg-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: var(--svg-bg);
+            transition: background-color 0.3s ease;
+        }
+        
+        .viz-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--text-muted);
+            font-size: 1rem;
+            text-align: center;
+            transition: color 0.3s ease;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           NÓS SVG (TEMA RESPONSIVO)
+           ═══════════════════════════════════════════════════════════ */
+        
+        :root[data-theme="dark"] .node-text-line {
+            fill: #e2e8f0 !important;
+        }
+        
+        :root[data-theme="light"] .node-text-line {
+            fill: #0f172a !important;
+        }
+        
+        .node.highlighted circle {
+            stroke: #fbbf24;
+            stroke-width: 3;
+        }
+        
+        .node.dimmed {
+            opacity: 0.3;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           TOOLTIP
+           ═══════════════════════════════════════════════════════════ */
+        
+        .tooltip {
+            position: fixed;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            z-index: 9999;
+            max-width: 300px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .t-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.4rem;
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        .t-row {
+            font-size: 0.8rem;
+            margin: 0.3rem 0;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+        
+        .t-row em {
+            font-style: normal;
+            font-weight: 600;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+        
+        .t-hint {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-style: italic;
+            border-top: 1px solid var(--border-color);
+            padding-top: 0.4rem;
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           LOADING
+           ═══════════════════════════════════════════════════════════ */
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 10000;
+            transition: background-color 0.3s ease;
+        }
+        
+        :root[data-theme="light"] .loading-overlay {
+            background: rgba(255, 255, 255, 0.9);
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-text {
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           FULLSCREEN
+           ═══════════════════════════════════════════════════════════ */
+        
+        .fullscreen-mini-toolbar {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.5rem;
+            gap: 0.5rem;
+            z-index: 9000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        body.fullscreen-mode .fullscreen-mini-toolbar {
+            display: flex;
+        }
+        
+        body.fullscreen-mode .header,
+        body.fullscreen-mode .contexto,
+        body.fullscreen-mode .filtros,
+        body.fullscreen-mode .metricas,
+        body.fullscreen-mode .viz-toolbar {
+            display: none;
+        }
+        
+        body.fullscreen-mode .viz-wrapper {
+            height: 100vh;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           LEGENDA EXPANDIDA
+           ═══════════════════════════════════════════════════════════ */
+        
+        .legend-expanded {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            min-width: 250px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .legend-expanded h4 {
+            margin: 0 0 0.75rem 0;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           BOTÃO TEMA
+           ═══════════════════════════════════════════════════════════ */
+        
+        #theme-toggle {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        #theme-toggle:hover {
+            background: var(--hover-bg);
+            transform: translateY(-1px);
+        }
+        
+        #toggle-icon {
+            font-size: 1.2rem;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           RESPONSIVO
+           ═══════════════════════════════════════════════════════════ */
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 0.75rem 1rem;
+            }
+            
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
+            .filtros, .metricas, .viz-toolbar {
+                padding: 0.75rem 1rem;
+            }
+            
+            .viz-toolbar {
+                gap: 0.75rem;
+            }
+            
+            .search-box {
+                width: 150px;
+            }
+        }
+    </style>
 </head>
 <body>
 
@@ -108,26 +661,26 @@
 <div class="legend-expanded" id="legend-expanded">
     <h4>📊 Sistema de Cores</h4>
     <div style="margin: 10px 0;">
-        <strong style="color:#94a3b8">Pontos (Tipo):</strong>
+        <strong style="color:var(--text-tertiary)">Pontos (Tipo):</strong>
         <div style="display: flex; gap: 8px; margin-top: 5px;">
             <div style="display:flex;align-items:center;gap:4px">
                 <div style="width:12px;height:12px;border-radius:50%;background:#E8873D"></div>
-                <span style="font-size:11px;color:#cbd5e1">Driver</span>
+                <span style="font-size:11px;color:var(--text-secondary)">Driver</span>
             </div>
             <div style="display:flex;align-items:center;gap:4px">
                 <div style="width:12px;height:12px;border-radius:50%;background:#6B7F8C"></div>
-                <span style="font-size:11px;color:#cbd5e1">Neutro</span>
+                <span style="font-size:11px;color:var(--text-secondary)">Neutro</span>
             </div>
             <div style="display:flex;align-items:center;gap:4px">
                 <div style="width:12px;height:12px;border-radius:50%;background:#2E4A60"></div>
-                <span style="font-size:11px;color:#cbd5e1">Anti-driver</span>
+                <span style="font-size:11px;color:var(--text-secondary)">Anti-driver</span>
             </div>
         </div>
     </div>
     <div style="margin-top: 15px;">
-        <strong style="color:#94a3b8">Linhas (Intensidade):</strong>
+        <strong style="color:var(--text-tertiary)">Linhas (Intensidade):</strong>
         <div class="legend-gradient-bar" style="background: linear-gradient(to right, #2E4A60, #5A8AB8, #6B7F8C, #9BB8A8, #D4A06A, #E8873D); height: 15px; border-radius: 4px; margin: 8px 0;"></div>
-        <div style="display: flex; justify-content: space-between; font-size: 10px; color: #64748b;">
+        <div style="display: flex; justify-content: space-between; font-size: 10px; color:var(--text-muted);">
             <span>-1000</span>
             <span>0</span>
             <span>+1000</span>
@@ -152,13 +705,6 @@ const layout = { spacingY: 26, spacingX: 220 };
 let rootNode = null, doUpdate = null, svgEl = null, zoomBeh = null, tipEl = null;
 let isFullscreen = false;
 
-// ═══════════════════════════════════════════════════════════════
-// SISTEMA DE CORES HÍBRIDO
-// Leafs: categórico (Driver/Anti-driver)
-// Internos: gradiente (avg_score)
-// Linhas: gradiente (intensidade)
-// ═══════════════════════════════════════════════════════════════
-
 const COLOR_STOPS = [
     { score: -2000, color: '#2E4A60' },
     { score: -1000, color: '#4A7299' },
@@ -170,11 +716,10 @@ const COLOR_STOPS = [
     { score: 2000, color: '#E8873D' }
 ];
 
-// Cores categóricas para leafs
 const CATEGORICAL_COLORS = {
-    'DRIVER': '#E8873D',         // Laranja
-    'ANTI-DRIVER': '#2E4A60',    // Azul escuro
-    'BAIXA RELEVÂNCIA': '#6B7F8C' // Cinza
+    'DRIVER': '#E8873D',
+    'ANTI-DRIVER': '#2E4A60',
+    'BAIXA RELEVÂNCIA': '#6B7F8C'
 };
 
 function hexToRgb(hex) {
@@ -235,11 +780,21 @@ function getNodeScore(d) {
     }
 }
 
-// COR DOS NÓS (HÍBRIDO)
+// Função para pegar a cor do texto baseada no tema
+function getTextColor() {
+    const theme = document.documentElement.getAttribute('data-theme');
+    return theme === 'dark' ? '#e2e8f0' : '#0f172a';
+}
+
+// Função para pegar cor do stroke do nó baseada no tema
+function getNodeStroke() {
+    const theme = document.documentElement.getAttribute('data-theme');
+    return theme === 'dark' ? '#1e293b' : '#e2e8f0';
+}
+
 function nodeColor(d) {
     if (!d || !d.data) return '#64748b';
     
-    // LEAFS: Cor categórica por direção
     if (d.data.leaf) {
         const direcao = safeGet(d, 'data.metrics.direcao', '');
         
@@ -248,11 +803,9 @@ function nodeColor(d) {
         return CATEGORICAL_COLORS['BAIXA RELEVÂNCIA'];
     }
     
-    // NÓS INTERNOS: Gradiente por avg_score
     const score = safeGet(d, 'data.metrics.avg_score', 0);
     const baseColor = getColorByScoreGradient(score);
     
-    // Se colapsado, escurecer
     if (d._children) {
         const rgb = hexToRgb(baseColor);
         if (rgb) return rgbToHex(rgb.r * 0.7, rgb.g * 0.7, rgb.b * 0.7);
@@ -261,7 +814,6 @@ function nodeColor(d) {
     return baseColor;
 }
 
-// COR DAS LINHAS (SEMPRE GRADIENTE)
 function linkColor(d) {
     if (!d || !d.data) return '#475569';
     const score = getNodeScore(d);
@@ -277,10 +829,6 @@ function linkWidth(d) {
     if (absScore < 1000) return 3;
     return 4;
 }
-
-// ═══════════════════════════════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════════════════════════════
 
 async function get(url, params = {}) {
     const qs = new URLSearchParams(params).toString();
@@ -343,7 +891,7 @@ function updateURL() {
     if (state.onda) params.set('onda', state.onda);
     if (state.assunto) params.set('assunto', state.assunto);
     if (state.pergunta) params.set('pergunta', state.pergunta);
-    if (state.direcao) params.set('direcao', state.direcao);
+    if (state.direcao) params.set('direcao', state.direcao);  // Só adiciona se não for null
     if (state.agregacao && state.agregacao !== 'weighted_mean') params.set('agregacao', state.agregacao);
     const newURL = window.location.pathname + '?' + params.toString();
     window.history.replaceState({}, '', newURL);
@@ -527,10 +1075,13 @@ async function loadData() {
     const p = { 
         onda: state.onda, 
         assunto: state.assunto, 
-        pergunta: state.pergunta, 
-        direcao: state.direcao,
+        pergunta: state.pergunta,
         agregacao: state.agregacao
     };
+    // Só enviar direcao se não for null
+    if (state.direcao) {
+        p.direcao = state.direcao;
+    }
     try {
         showLoading('Carregando dados...');
         const [tree, met] = await Promise.all([
@@ -652,7 +1203,7 @@ function renderTree(data) {
 
             nodeEnter.append('circle')
                 .attr('r', 5)
-                .style('stroke', '#1e293b')
+                .style('stroke', getNodeStroke())
                 .style('stroke-width', 1.5);
 
             nodeEnter.each(function(d) {
@@ -668,7 +1219,7 @@ function renderTree(data) {
                         .attr('text-anchor', isLeft ? 'end' : 'start')
                         .text(line)
                         .style('font-size', '12px')
-                        .style('fill', '#e2e8f0')
+                        .style('fill', getTextColor())
                         .style('pointer-events', 'none');
                 });
             });
@@ -680,7 +1231,8 @@ function renderTree(data) {
                 .style('opacity', 1);
 
             nodeUpdate.select('circle')
-                .style('fill', nodeColor);
+                .style('fill', nodeColor)
+                .style('stroke', getNodeStroke());
 
             nodes.forEach(d => {
                 d.x0 = d.x;
@@ -697,10 +1249,7 @@ function renderTree(data) {
 
         doUpdate(rootNode);
         
-        console.log('🎨 Árvore renderizada com sistema HÍBRIDO');
-        console.log('  Leafs: categórico (Driver/Anti-driver)');
-        console.log('  Internos: gradiente (avg_score)');
-        console.log('  Linhas: gradiente (intensidade)');
+        console.log('🎨 Árvore renderizada com sistema HÍBRIDO + tema responsivo');
         
     } catch(e) {
         console.error('❌ Erro ao renderizar:', e);
@@ -853,6 +1402,12 @@ function initTheme() {
         const isDark = document.documentElement.dataset.theme === 'dark';
         document.documentElement.dataset.theme = isDark ? 'light' : 'dark';
         icon.textContent = isDark ? '🌙' : '☀️';
+        
+        // Atualizar cores do SVG quando trocar tema
+        if (rootNode && doUpdate) {
+            d3.selectAll('.node-text-line').style('fill', getTextColor());
+            d3.selectAll('.node circle').style('stroke', getNodeStroke());
+        }
     });
 }
 
@@ -910,7 +1465,7 @@ function initControls() {
     });
     
     document.getElementById('direcao-select').addEventListener('change', e => {
-        state.direcao = e.target.value || null;
+        state.direcao = e.target.value || null;  // Converte string vazia para null
         updateURL();
         if (state.pergunta) loadData();
     });
@@ -929,10 +1484,7 @@ function initControls() {
     document.getElementById('btn-export').addEventListener('click', exportToPNG);
 }
 
-console.log('🎨 NEXAS Analytics v2.0 - Sistema HÍBRIDO ativado');
-console.log('├─ Leafs: cor categórica (Driver/Anti-driver)');
-console.log('├─ Nós internos: gradiente (avg_score)');
-console.log('└─ Linhas: gradiente (intensidade)');
+console.log('🎨 NEXAS Analytics v2.0 - Sistema HÍBRIDO + Tema Responsivo ativado');
 
 init();
 </script>
