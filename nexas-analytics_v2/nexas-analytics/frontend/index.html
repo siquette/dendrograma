@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXAS Analytics v2.0 - Híbrido</title>
+    <title>NEXAS Analytics v2.0 - Final</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         /* ═══════════════════════════════════════════════════════════
@@ -42,10 +42,6 @@
             --node-stroke: #e2e8f0;
         }
         
-        /* ═══════════════════════════════════════════════════════════
-           RESET E BASE
-           ═══════════════════════════════════════════════════════════ */
-        
         * {
             margin: 0;
             padding: 0;
@@ -61,7 +57,7 @@
         }
         
         /* ═══════════════════════════════════════════════════════════
-           HEADER
+           HEADER ADAPTATIVO - NORMAL E MINIMIZADO
            ═══════════════════════════════════════════════════════════ */
         
         .header {
@@ -71,7 +67,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: background-color 0.3s ease, border-color 0.3s ease;
+            transition: all 0.3s ease;
+            height: 60px;
+        }
+        
+        body.minimized .header {
+            height: 40px;
+            padding: 0.5rem 2rem;
         }
         
         .header h1 {
@@ -79,22 +81,93 @@
             font-weight: 700;
             letter-spacing: 0.05em;
             color: var(--text-primary);
-            transition: color 0.3s ease;
+            transition: all 0.3s ease;
+        }
+        
+        body.minimized .header h1 {
+            font-size: 1.1rem;
         }
         
         .header-right {
             display: flex;
             gap: 1rem;
             align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        body.minimized .header-right select {
+            display: none;
+        }
+        
+        body.minimized .header-right {
+            gap: 0.5rem;
         }
         
         /* ═══════════════════════════════════════════════════════════
-           CONTEXTO
+           CONTROLES COLAPSÁVEIS - CONTEXTO, FILTROS, MÉTRICAS
            ═══════════════════════════════════════════════════════════ */
+        
+        .controls-wrapper {
+            transition: all 0.3s ease;
+        }
+        
+        body.minimized .controls-wrapper {
+            display: none;
+        }
+        
+        .section-collapsible {
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 2rem;
+            background: var(--bg-secondary);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+        }
+        
+        .section-header:hover {
+            background: var(--hover-bg);
+        }
+        
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: color 0.3s ease;
+        }
+        
+        .section-toggle {
+            font-size: 1.2rem;
+            color: var(--text-tertiary);
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+        
+        .section-collapsed .section-toggle {
+            transform: rotate(-90deg);
+        }
+        
+        .section-content {
+            max-height: 500px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 1;
+        }
+        
+        .section-collapsed .section-content {
+            max-height: 0;
+            opacity: 0;
+        }
         
         .contexto {
             background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
             padding: 0.75rem 2rem;
             font-size: 0.9rem;
             color: var(--text-secondary);
@@ -102,16 +175,11 @@
             transition: all 0.3s ease;
         }
         
-        /* ═══════════════════════════════════════════════════════════
-           FILTROS
-           ═══════════════════════════════════════════════════════════ */
-        
         .filtros {
             background: var(--bg-primary);
             padding: 1rem 2rem;
             display: flex;
             gap: 1rem;
-            border-bottom: 1px solid var(--border-color);
             transition: all 0.3s ease;
         }
         
@@ -136,16 +204,11 @@
             outline-offset: 2px;
         }
         
-        /* ═══════════════════════════════════════════════════════════
-           MÉTRICAS
-           ═══════════════════════════════════════════════════════════ */
-        
         .metricas {
             display: flex;
             gap: 1.5rem;
             padding: 1.5rem 2rem;
             background: var(--bg-primary);
-            border-bottom: 1px solid var(--border-color);
             transition: all 0.3s ease;
         }
         
@@ -171,33 +234,27 @@
             transition: color 0.3s ease;
         }
         
-        .cor-driver {
-            color: #E8873D !important;
-        }
-        
-        .cor-anti {
-            color: #2E4A60 !important;
-        }
+        .cor-driver { color: #E8873D !important; }
+        .cor-anti { color: #2E4A60 !important; }
         
         /* ═══════════════════════════════════════════════════════════
-           VISUALIZAÇÃO
+           TOOLBAR - SEMPRE VISÍVEL
            ═══════════════════════════════════════════════════════════ */
-        
-        .viz-wrapper {
-            display: flex;
-            flex-direction: column;
-            height: calc(100vh - 250px);
-        }
         
         .viz-toolbar {
             background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
             padding: 0.75rem 2rem;
             display: flex;
             gap: 1.5rem;
             align-items: center;
             flex-wrap: wrap;
             transition: all 0.3s ease;
+            border-bottom: 1px solid var(--border-color);
+            min-height: 50px;
+        }
+        
+        body.minimized .viz-toolbar {
+            padding: 0.5rem 2rem;
         }
         
         .toolbar-group {
@@ -232,20 +289,12 @@
             transform: translateY(-1px);
         }
         
-        .zoom-pct {
+        .zoom-pct, .slider-val {
             font-size: 0.85rem;
             color: var(--text-secondary);
             font-weight: 600;
             min-width: 45px;
             text-align: center;
-            transition: color 0.3s ease;
-        }
-        
-        .slider-val {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            font-weight: 600;
-            min-width: 30px;
             transition: color 0.3s ease;
         }
         
@@ -279,10 +328,6 @@
             font-size: 0.85rem;
         }
         
-        /* ═══════════════════════════════════════════════════════════
-           LEGENDA
-           ═══════════════════════════════════════════════════════════ */
-        
         .legenda {
             display: flex;
             gap: 1rem;
@@ -305,11 +350,126 @@
         }
         
         /* ═══════════════════════════════════════════════════════════
-           CONTAINER SVG
+           BOTÃO MINIMIZAR MODO COMPACTO
            ═══════════════════════════════════════════════════════════ */
         
+        .btn-minimize {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-minimize:hover {
+            background: var(--hover-bg);
+            transform: translateY(-1px);
+        }
+        
+        body.minimized .btn-minimize {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           OVERLAY DE FILTROS
+           ═══════════════════════════════════════════════════════════ */
+        
+        .filters-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .filters-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        
+        .filters-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .filters-panel h3 {
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+        }
+        
+        .filters-panel .section-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .filters-panel .section-group h4 {
+            font-size: 0.9rem;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .filters-panel .close-btn {
+            width: 100%;
+            margin-top: 1.5rem;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .filters-panel .close-btn:hover {
+            background: var(--hover-bg);
+        }
+        
+        /* ═══════════════════════════════════════════════════════════
+           DENDROGRAMA - STICKY E RESPONSIVO
+           ═══════════════════════════════════════════════════════════ */
+        
+        .viz-wrapper {
+            position: sticky;
+            top: 0;
+            height: calc(100vh - 90px);
+            transition: height 0.3s ease;
+        }
+        
+        body.minimized .viz-wrapper {
+            height: calc(100vh - 90px);
+        }
+        
         .viz-svg-container {
-            flex: 1;
+            width: 100%;
+            height: 100%;
             position: relative;
             overflow: hidden;
             background: var(--svg-bg);
@@ -326,10 +486,6 @@
             text-align: center;
             transition: color 0.3s ease;
         }
-        
-        /* ═══════════════════════════════════════════════════════════
-           NÓS SVG (TEMA RESPONSIVO)
-           ═══════════════════════════════════════════════════════════ */
         
         :root[data-theme="dark"] .node-text-line {
             fill: #e2e8f0 !important;
@@ -363,7 +519,7 @@
             opacity: 0;
             transition: opacity 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
             z-index: 9999;
-            max-width: 300px;
+            max-width: 380px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
@@ -402,7 +558,7 @@
         }
         
         /* ═══════════════════════════════════════════════════════════
-           LOADING
+           LOADING, TEMA, LEGEND
            ═══════════════════════════════════════════════════════════ */
         
         .loading-overlay {
@@ -445,71 +601,6 @@
             to { transform: rotate(360deg); }
         }
         
-        /* ═══════════════════════════════════════════════════════════
-           FULLSCREEN
-           ═══════════════════════════════════════════════════════════ */
-        
-        .fullscreen-mini-toolbar {
-            display: none;
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 0.5rem;
-            gap: 0.5rem;
-            z-index: 9000;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
-        
-        body.fullscreen-mode .fullscreen-mini-toolbar {
-            display: flex;
-        }
-        
-        body.fullscreen-mode .header,
-        body.fullscreen-mode .contexto,
-        body.fullscreen-mode .filtros,
-        body.fullscreen-mode .metricas,
-        body.fullscreen-mode .viz-toolbar {
-            display: none;
-        }
-        
-        body.fullscreen-mode .viz-wrapper {
-            height: 100vh;
-        }
-        
-        /* ═══════════════════════════════════════════════════════════
-           LEGENDA EXPANDIDA
-           ═══════════════════════════════════════════════════════════ */
-        
-        .legend-expanded {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1rem;
-            min-width: 250px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-        
-        .legend-expanded h4 {
-            margin: 0 0 0.75rem 0;
-            font-size: 0.9rem;
-            color: var(--text-primary);
-            transition: color 0.3s ease;
-        }
-        
-        /* ═══════════════════════════════════════════════════════════
-           BOTÃO TEMA
-           ═══════════════════════════════════════════════════════════ */
-        
         #theme-toggle {
             background: var(--bg-tertiary);
             color: var(--text-primary);
@@ -533,30 +624,39 @@
             font-size: 1.2rem;
         }
         
-        /* ═══════════════════════════════════════════════════════════
-           RESPONSIVO
-           ═══════════════════════════════════════════════════════════ */
+        body.minimized #theme-toggle {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
+        }
+        
+        .legend-expanded {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            min-width: 250px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .legend-expanded h4 {
+            margin: 0 0 0.75rem 0;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
         
         @media (max-width: 768px) {
-            .header {
-                padding: 0.75rem 1rem;
-            }
-            
-            .header h1 {
-                font-size: 1.2rem;
-            }
-            
-            .filtros, .metricas, .viz-toolbar {
-                padding: 0.75rem 1rem;
-            }
-            
-            .viz-toolbar {
-                gap: 0.75rem;
-            }
-            
-            .search-box {
-                width: 150px;
-            }
+            .header { padding: 0.75rem 1rem; }
+            .header h1 { font-size: 1.2rem; }
+            .filtros, .metricas, .viz-toolbar { padding: 0.75rem 1rem; }
+            .viz-toolbar { gap: 0.75rem; }
+            .search-box { width: 150px; }
         }
     </style>
 </head>
@@ -566,6 +666,10 @@
     <h1>NEXAS ANALYTICS</h1>
     <div class="header-right">
         <select id="onda-select"><option value="">Carregando ondas...</option></select>
+        <button class="btn-minimize" id="btn-toggle-compact">
+            <span id="compact-icon">▲</span>
+            <span id="compact-text">Compacto</span>
+        </button>
         <button id="theme-toggle">
             <span id="toggle-icon">☀️</span>
             <span style="font-size:11px;letter-spacing:.5px">TEMA</span>
@@ -573,89 +677,146 @@
     </div>
 </header>
 
-<div class="contexto" id="contexto">
-    Selecione uma onda e um cruzamento para iniciar a análise.
+<div class="controls-wrapper" id="controls-wrapper">
+    <div class="section-collapsible" id="section-contexto">
+        <div class="section-header" onclick="toggleSection('contexto')">
+            <span class="section-title">Contexto</span>
+            <span class="section-toggle">▼</span>
+        </div>
+        <div class="section-content">
+            <div class="contexto" id="contexto">
+                Selecione uma onda e um cruzamento para iniciar a análise.
+            </div>
+        </div>
+    </div>
+
+    <div class="section-collapsible" id="section-filtros">
+        <div class="section-header" onclick="toggleSection('filtros')">
+            <span class="section-title">Filtros</span>
+            <span class="section-toggle">▼</span>
+        </div>
+        <div class="section-content">
+            <div class="filtros">
+                <select id="assunto-select" disabled><option value="">Assunto</option></select>
+                <select id="pergunta-select" disabled><option value="">Pergunta / Indicador</option></select>
+                <select id="direcao-select">
+                    <option value="">Todas as direções</option>
+                    <option value="DRIVER">Só Drivers</option>
+                    <option value="ANTI-DRIVER">Só Anti-drivers</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-collapsible" id="section-metricas">
+        <div class="section-header" onclick="toggleSection('metricas')">
+            <span class="section-title">Métricas</span>
+            <span class="section-toggle">▼</span>
+        </div>
+        <div class="section-content">
+            <div class="metricas">
+                <div class="metrica-item"><div class="valor" id="met-total">—</div><div class="label">Cruzamentos</div></div>
+                <div class="metrica-item"><div class="valor cor-driver" id="met-drivers">—</div><div class="label">Drivers</div></div>
+                <div class="metrica-item"><div class="valor cor-anti" id="met-anti">—</div><div class="label">Anti-drivers</div></div>
+                <div class="metrica-item"><div class="valor" id="met-score">—</div><div class="label">Top Score</div></div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="filtros">
-    <select id="assunto-select" disabled><option value="">Assunto</option></select>
-    <select id="pergunta-select" disabled><option value="">Pergunta / Indicador</option></select>
-    <select id="direcao-select">
-        <option value="">Todas as direções</option>
-        <option value="DRIVER">Só Drivers</option>
-        <option value="ANTI-DRIVER">Só Anti-drivers</option>
-    </select>
-</div>
-
-<div class="metricas">
-    <div class="metrica-item"><div class="valor" id="met-total">—</div><div class="label">Cruzamentos</div></div>
-    <div class="metrica-item"><div class="valor cor-driver" id="met-drivers">—</div><div class="label">Drivers</div></div>
-    <div class="metrica-item"><div class="valor cor-anti" id="met-anti">—</div><div class="label">Anti-drivers</div></div>
-    <div class="metrica-item"><div class="valor" id="met-score">—</div><div class="label">Top Score</div></div>
+<div class="viz-toolbar">
+    <div class="toolbar-group">
+        <span class="toolbar-label">Zoom</span>
+        <button class="zoom-btn" id="btn-zoom-in">＋</button>
+        <span class="zoom-pct" id="zoom-pct">100%</span>
+        <button class="zoom-btn" id="btn-zoom-out">－</button>
+        <button class="zoom-btn btn-sm" id="btn-zoom-fit" style="width:auto;padding:0 8px">⊞ Fit</button>
+    </div>
+    <div class="toolbar-group">
+        <span class="toolbar-label">Espaço Y</span>
+        <input type="range" id="slider-y" min="14" max="100" value="26" step="2">
+        <span class="slider-val" id="val-y">26</span>
+    </div>
+    <div class="toolbar-group">
+        <span class="toolbar-label">Espaço X</span>
+        <input type="range" id="slider-x" min="120" max="400" value="220" step="10">
+        <span class="slider-val" id="val-x">220</span>
+    </div>
+    <div class="toolbar-group">
+        <span class="toolbar-label">Buscar</span>
+        <input type="text" class="search-box" id="search-box" placeholder="🔍 texto...">
+        <button class="btn-sm" id="btn-clear-search">✕</button>
+    </div>
+    <div class="toolbar-group">
+        <button class="btn-sm" id="btn-expand">＋ Expandir</button>
+        <button class="btn-sm" id="btn-collapse">－ Colapsar</button>
+    </div>
+    <div class="toolbar-group">
+        <span class="toolbar-label">Agregação</span>
+        <select id="agregacao-select" class="btn-sm">
+            <option value="weighted_mean">Média Ponderada</option>
+            <option value="mean">Média Simples</option>
+            <option value="median">Mediana</option>
+            <option value="max">Máximo (Potencial)</option>
+        </select>
+    </div>
+    <div class="toolbar-group">
+        <button class="btn-sm" id="btn-filters" title="Abrir Filtros (quando minimizado)">⚙ Filtros</button>
+        <button class="btn-sm" id="btn-export" title="Exportar PNG">📷 Export</button>
+    </div>
+    <div class="legenda">
+        <div class="legenda-item"><div class="legenda-dot" style="background:#E8873D"></div>Driver</div>
+        <div class="legenda-item"><div class="legenda-dot" style="background:#6B7F8C"></div>Neutro</div>
+        <div class="legenda-item"><div class="legenda-dot" style="background:#2E4A60"></div>Anti-D</div>
+    </div>
 </div>
 
 <div class="viz-wrapper">
-    <div class="viz-toolbar">
-        <div class="toolbar-group">
-            <span class="toolbar-label">Zoom</span>
-            <button class="zoom-btn" id="btn-zoom-in">＋</button>
-            <span class="zoom-pct" id="zoom-pct">100%</span>
-            <button class="zoom-btn" id="btn-zoom-out">－</button>
-            <button class="zoom-btn btn-sm" id="btn-zoom-fit" style="width:auto;padding:0 8px">⊞ Fit</button>
-        </div>
-        <div class="toolbar-group">
-            <span class="toolbar-label">Espaço Y</span>
-            <input type="range" id="slider-y" min="14" max="100" value="26" step="2">
-            <span class="slider-val" id="val-y">26</span>
-        </div>
-        <div class="toolbar-group">
-            <span class="toolbar-label">Espaço X</span>
-            <input type="range" id="slider-x" min="120" max="400" value="220" step="10">
-            <span class="slider-val" id="val-x">220</span>
-        </div>
-        <div class="toolbar-group">
-            <span class="toolbar-label">Buscar</span>
-            <input type="text" class="search-box" id="search-box" placeholder="🔍 texto...">
-            <button class="btn-sm" id="btn-clear-search">✕</button>
-        </div>
-        <div class="toolbar-group">
-            <button class="btn-sm" id="btn-expand">＋ Expandir</button>
-            <button class="btn-sm" id="btn-collapse">－ Colapsar</button>
-        </div>
-        <div class="toolbar-group">
-            <span class="toolbar-label">Agregação</span>
-            <select id="agregacao-select" class="btn-sm">
-                <option value="weighted_mean">Média Ponderada</option>
-                <option value="mean">Média Simples</option>
-                <option value="median">Mediana</option>
-                <option value="max">Máximo (Potencial)</option>
-            </select>
-        </div>
-        <div class="toolbar-group">
-            <button class="btn-sm" id="btn-fullscreen" title="Fullscreen (F)">⛶ Full</button>
-            <button class="btn-sm" id="btn-export" title="Exportar PNG">📷 Export</button>
-        </div>
-        <div class="legenda">
-            <div class="legenda-item"><div class="legenda-dot" style="background:#E8873D"></div>Driver</div>
-            <div class="legenda-item"><div class="legenda-dot" style="background:#6B7F8C"></div>Neutro</div>
-            <div class="legenda-item"><div class="legenda-dot" style="background:#2E4A60"></div>Anti-D</div>
-        </div>
-    </div>
     <div class="viz-svg-container" id="svg-container">
         <div class="viz-placeholder">Dendrograma aparecerá aqui após selecionar o cruzamento</div>
+    </div>
+</div>
+
+<div class="filters-overlay" id="filters-overlay">
+    <div class="filters-panel">
+        <h3>⚙ Controles e Filtros</h3>
+        
+        <div class="section-group">
+            <h4>Contexto</h4>
+            <div class="contexto" id="overlay-contexto" style="padding:0.5rem 0;background:transparent">
+                Selecione uma onda e um cruzamento.
+            </div>
+        </div>
+        
+        <div class="section-group">
+            <h4>Filtros</h4>
+            <div class="filtros" style="padding:0;flex-direction:column">
+                <select id="overlay-assunto" disabled><option value="">Assunto</option></select>
+                <select id="overlay-pergunta" disabled><option value="">Pergunta</option></select>
+                <select id="overlay-direcao">
+                    <option value="">Todas as direções</option>
+                    <option value="DRIVER">Só Drivers</option>
+                    <option value="ANTI-DRIVER">Só Anti-drivers</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="section-group">
+            <h4>Métricas</h4>
+            <div class="metricas" style="padding:0">
+                <div class="metrica-item"><div class="valor" id="overlay-total">—</div><div class="label">Cruzamentos</div></div>
+                <div class="metrica-item"><div class="valor cor-driver" id="overlay-drivers">—</div><div class="label">Drivers</div></div>
+                <div class="metrica-item"><div class="valor cor-anti" id="overlay-anti">—</div><div class="label">Anti-drivers</div></div>
+            </div>
+        </div>
+        
+        <button class="close-btn" onclick="closeFiltersOverlay()">✕ Fechar</button>
     </div>
 </div>
 
 <div class="loading-overlay" id="loading-overlay">
     <div class="loading-spinner"></div>
     <div class="loading-text" id="loading-text">Carregando...</div>
-</div>
-
-<div class="fullscreen-mini-toolbar" id="mini-toolbar">
-    <button class="zoom-btn" onclick="document.getElementById('btn-zoom-in').click()" title="Zoom In">＋</button>
-    <button class="zoom-btn" onclick="document.getElementById('btn-zoom-out').click()" title="Zoom Out">－</button>
-    <button class="zoom-btn" onclick="document.getElementById('btn-zoom-fit').click()" title="Fit">⊞</button>
-    <button class="btn-sm" id="btn-exit-fullscreen" title="Sair (ESC)">✕ Sair</button>
 </div>
 
 <div class="legend-expanded" id="legend-expanded">
@@ -691,19 +852,32 @@
 <div class="tooltip" id="tooltip"></div>
 
 <script>
-const API = '/api';
 
-const state = { 
-    onda: null, 
-    assunto: null, 
-    pergunta: null, 
+// ═══════════════════════════════════════════════════════════
+// VARIÁVEIS GLOBAIS
+// ═══════════════════════════════════════════════════════════
+
+const state = {
+    onda: null,
+    assunto: null,
+    pergunta: null,
     direcao: null,
-    agregacao: 'weighted_mean'
+    treeData: null,
+    nodeYSpacing: 26,
+    nodeXSpacing: 220,
+    zoomLevel: 1,
+    agregacao: 'weighted_mean',
+    isCompactMode: false
 };
 
-const layout = { spacingY: 26, spacingX: 220 };
-let rootNode = null, doUpdate = null, svgEl = null, zoomBeh = null, tipEl = null;
-let isFullscreen = false;
+let svg, g, treemap, root, diagonal;
+const tipEl = document.getElementById('tooltip');
+const loadingEl = document.getElementById('loading-overlay');
+const loadingTextEl = document.getElementById('loading-text');
+
+// ═══════════════════════════════════════════════════════════
+// SISTEMA DE CORES HÍBRIDO
+// ═══════════════════════════════════════════════════════════
 
 const COLOR_STOPS = [
     { score: -2000, color: '#2E4A60' },
@@ -716,196 +890,121 @@ const COLOR_STOPS = [
     { score: 2000, color: '#E8873D' }
 ];
 
-const CATEGORICAL_COLORS = {
-    'DRIVER': '#E8873D',
-    'ANTI-DRIVER': '#2E4A60',
-    'BAIXA RELEVÂNCIA': '#6B7F8C'
-};
-
 function hexToRgb(hex) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16)
-    } : null;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return { r, g, b };
 }
 
 function rgbToHex(r, g, b) {
-    return "#" + ((1 << 24) + (Math.round(r) << 16) + (Math.round(g) << 8) + Math.round(b)).toString(16).slice(1);
+    return '#' + [r, g, b].map(x => {
+        const hex = Math.round(x).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
 }
 
-function interpolateColor(color1, color2, factor) {
-    const c1 = hexToRgb(color1);
-    const c2 = hexToRgb(color2);
-    if (!c1 || !c2) return color1;
-    
-    const r = c1.r + factor * (c2.r - c1.r);
-    const g = c1.g + factor * (c2.g - c1.g);
-    const b = c1.b + factor * (c2.b - c1.b);
-    
-    return rgbToHex(r, g, b);
-}
-
-function getColorByScoreGradient(score) {
-    if (score === null || score === undefined) return '#6B7F8C';
-    
-    const s = parseFloat(score);
-    
-    if (s <= COLOR_STOPS[0].score) return COLOR_STOPS[0].color;
-    if (s >= COLOR_STOPS[COLOR_STOPS.length - 1].score) return COLOR_STOPS[COLOR_STOPS.length - 1].color;
-    
+function interpolateColor(score) {
     for (let i = 0; i < COLOR_STOPS.length - 1; i++) {
         const stop1 = COLOR_STOPS[i];
         const stop2 = COLOR_STOPS[i + 1];
         
-        if (s >= stop1.score && s <= stop2.score) {
-            const range = stop2.score - stop1.score;
-            const position = s - stop1.score;
-            const factor = position / range;
-            return interpolateColor(stop1.color, stop2.color, factor);
+        if (score >= stop1.score && score <= stop2.score) {
+            const t = (score - stop1.score) / (stop2.score - stop1.score);
+            const rgb1 = hexToRgb(stop1.color);
+            const rgb2 = hexToRgb(stop2.color);
+            
+            const r = rgb1.r + t * (rgb2.r - rgb1.r);
+            const g = rgb1.g + t * (rgb2.g - rgb1.g);
+            const b = rgb1.b + t * (rgb2.b - rgb1.b);
+            
+            return rgbToHex(r, g, b);
         }
     }
     
-    return '#6B7F8C';
+    if (score < COLOR_STOPS[0].score) return COLOR_STOPS[0].color;
+    return COLOR_STOPS[COLOR_STOPS.length - 1].color;
 }
 
-function getNodeScore(d) {
-    if (!d || !d.data) return 0;
-    
-    if (d.data.leaf) {
-        return safeGet(d, 'data.metrics.score_nexas', 0);
-    } else {
-        return safeGet(d, 'data.metrics.avg_score', 0);
-    }
-}
-
-// Função para pegar a cor do texto baseada no tema
-function getTextColor() {
-    const theme = document.documentElement.getAttribute('data-theme');
-    return theme === 'dark' ? '#e2e8f0' : '#0f172a';
-}
-
-// Função para pegar cor do stroke do nó baseada no tema
-function getNodeStroke() {
-    const theme = document.documentElement.getAttribute('data-theme');
-    return theme === 'dark' ? '#1e293b' : '#e2e8f0';
+function getColorByScoreGradient(score) {
+    return interpolateColor(score);
 }
 
 function nodeColor(d) {
-    if (!d || !d.data) return '#64748b';
+    if (!d || !d.data || !d.data.metrics) return '#6B7F8C';
     
     if (d.data.leaf) {
-        const direcao = safeGet(d, 'data.metrics.direcao', '');
-        
-        if (direcao === 'DRIVER') return CATEGORICAL_COLORS['DRIVER'];
-        if (direcao === 'ANTI-DRIVER') return CATEGORICAL_COLORS['ANTI-DRIVER'];
-        return CATEGORICAL_COLORS['BAIXA RELEVÂNCIA'];
+        const dir = d.data.metrics.direcao;
+        if (dir === 'DRIVER') return '#E8873D';
+        if (dir === 'ANTI-DRIVER') return '#2E4A60';
+        return '#6B7F8C';
     }
     
-    const score = safeGet(d, 'data.metrics.avg_score', 0);
-    const baseColor = getColorByScoreGradient(score);
-    
-    if (d._children) {
-        const rgb = hexToRgb(baseColor);
-        if (rgb) return rgbToHex(rgb.r * 0.7, rgb.g * 0.7, rgb.b * 0.7);
-    }
-    
-    return baseColor;
-}
-
-function linkColor(d) {
-    if (!d || !d.data) return '#475569';
     const score = getNodeScore(d);
     return getColorByScoreGradient(score);
 }
 
-function linkWidth(d) {
-    if (!d || !d.data) return 1.5;
+function linkColor(d) {
     const score = getNodeScore(d);
-    const absScore = Math.abs(score);
-    if (absScore < 30) return 1;
-    if (absScore < 200) return 2;
-    if (absScore < 1000) return 3;
-    return 4;
+    return getColorByScoreGradient(score);
 }
 
-async function get(url, params = {}) {
-    const qs = new URLSearchParams(params).toString();
-    const res = await fetch(`${url}?${qs}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-}
+// ═══════════════════════════════════════════════════════════
+// MENU RETRÁTIL CASCATA
+// ═══════════════════════════════════════════════════════════
 
-function safeGet(obj, path, defaultValue = null) {
-    try {
-        return path.split('.').reduce((o, p) => o?.[p], obj) ?? defaultValue;
-    } catch {
-        return defaultValue;
+function toggleSection(sectionName) {
+    const section = document.getElementById(`section-${sectionName}`);
+    if (section) {
+        section.classList.toggle('section-collapsed');
     }
 }
 
-function wrapText(text, maxCharsPerLine = 35) {
-    if (!text || text.length <= maxCharsPerLine) return [text];
-    
-    const words = text.split(/\s+/);
-    const lines = [];
-    let currentLine = '';
-    
-    words.forEach(word => {
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
-        if (testLine.length <= maxCharsPerLine) {
-            currentLine = testLine;
-        } else {
-            if (currentLine) lines.push(currentLine);
-            currentLine = word;
-        }
-    });
-    
-    if (currentLine) lines.push(currentLine);
-    return lines;
-}
+// ═══════════════════════════════════════════════════════════
+// MODO COMPACTO - STICKY + MINI-HEADER
+// ═══════════════════════════════════════════════════════════
 
-function showLoading(text = 'Carregando...') {
-    const overlay = document.getElementById('loading-overlay');
-    const loadingText = document.getElementById('loading-text');
-    if (overlay && loadingText) {
-        loadingText.textContent = text;
-        overlay.style.display = 'flex';
+function toggleCompactMode() {
+    state.isCompactMode = !state.isCompactMode;
+    document.body.classList.toggle('minimized', state.isCompactMode);
+    
+    const icon = document.getElementById('compact-icon');
+    const text = document.getElementById('compact-text');
+    
+    if (state.isCompactMode) {
+        icon.textContent = '▼';
+        text.textContent = 'Expandir';
+    } else {
+        icon.textContent = '▲';
+        text.textContent = 'Compacto';
     }
+    setTimeout(resizeDendrogram, 300);
 }
 
-function hideLoading() {
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) overlay.style.display = 'none';
+function openFiltersOverlay() {
+    const overlay = document.getElementById('filters-overlay');
+    overlay.classList.add('active');
+    
+    syncOverlayValues();
 }
 
-function toggleFullscreen() {
-    isFullscreen = !isFullscreen;
-    document.body.classList.toggle('fullscreen-mode', isFullscreen);
-    if (rootNode && doUpdate) setTimeout(() => fitToScreen(), 100);
+function closeFiltersOverlay() {
+    const overlay = document.getElementById('filters-overlay');
+    overlay.classList.remove('active');
 }
 
-function updateURL() {
-    const params = new URLSearchParams();
-    if (state.onda) params.set('onda', state.onda);
-    if (state.assunto) params.set('assunto', state.assunto);
-    if (state.pergunta) params.set('pergunta', state.pergunta);
-    if (state.direcao) params.set('direcao', state.direcao);  // Só adiciona se não for null
-    if (state.agregacao && state.agregacao !== 'weighted_mean') params.set('agregacao', state.agregacao);
-    const newURL = window.location.pathname + '?' + params.toString();
-    window.history.replaceState({}, '', newURL);
+function syncOverlayValues() {
+    const contexto = document.getElementById('contexto').textContent;
+    document.getElementById('overlay-contexto').textContent = contexto;
+    
+    document.getElementById('overlay-total').textContent = document.getElementById('met-total').textContent;
+    document.getElementById('overlay-drivers').textContent = document.getElementById('met-drivers').textContent;
+    document.getElementById('overlay-anti').textContent = document.getElementById('met-anti').textContent;
 }
 
-function getAgregacaoLabel() {
-    const labels = {
-        'weighted_mean': 'Média Ponderada',
-        'mean': 'Média Simples',
-        'median': 'Mediana',
-        'max': 'Máximo'
-    };
-    return labels[state.agregacao] || 'Média';
-}
+// ═══════════════════════════════════════════════════════════
+// TOOLTIP COM COMPOSIÇÃO (SEM DESVIO PADRÃO)
+// ═══════════════════════════════════════════════════════════
 
 function showTip(ev, d) {
     if (!d || !d.data) return;
@@ -923,7 +1022,7 @@ function showTip(ev, d) {
         h += `<div class="t-row">Categoria: <em>${m.categoria_direcao || 'N/A'}</em></div>`;
         h += `<div class="t-row">Lift: <em>${(m.lift || 0).toFixed(3)}</em></div>`;
         h += `<div class="t-row">Relevância: <em>${((m.relevancia || 0)*100).toFixed(1)}%</em></div>`;
-        if (m.base_comum) h += `<div class="t-row">Base: <em>${m.base_comum}</em></div>`;
+        if (m.base_comum) h += `<div class="t-row">Base comum: <em>${m.base_comum}</em></div>`;
     } else {
         h += `<div class="t-row">Score Médio (${getAgregacaoLabel()}): <em style="color:${scoreColor};font-weight:bold">${score.toFixed(2)}</em></div>`;
         
@@ -931,20 +1030,35 @@ function showTip(ev, d) {
             h += `<div class="t-row">Range: <em>${m.min_score.toFixed(0)} a ${m.max_score.toFixed(0)}</em></div>`;
         }
         
-        if (m.median_score !== undefined && m.median_score !== m.avg_score) {
+        if (m.median_score !== undefined && Math.abs(m.median_score - m.avg_score) > 0.1) {
             h += `<div class="t-row">Mediana: <em>${m.median_score.toFixed(2)}</em></div>`;
         }
         
-        if (m.std_dev !== undefined && m.std_dev > 0) {
-            const cv = m.std_dev / Math.abs(m.avg_score || 1);
-            const consistencia = cv < 0.3 ? '✓ Consistente' : cv < 0.7 ? '⚠️ Variável' : '⚠️ Alta variação';
-            h += `<div class="t-row">Desvio padrão: <em>${m.std_dev.toFixed(1)}</em> ${consistencia}</div>`;
+        // NOVO: Composição Driver/Anti-driver (substitui desvio padrão)
+        if (m.composition) {
+            h += `<div class="t-row" style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border-color)"><strong>Composição:</strong></div>`;
+            
+            if (m.composition.drivers) {
+                const d = m.composition.drivers;
+                h += `<div class="t-row">• Drivers: <em>${d.percentage}% (${d.count})</em></div>`;
+                h += `<div class="t-row" style="margin-left:1rem">média <em style="color:#E8873D">+${d.avg.toFixed(0)}</em>, max <em>+${d.max.toFixed(0)}</em></div>`;
+            }
+            
+            if (m.composition.anti_drivers) {
+                const a = m.composition.anti_drivers;
+                h += `<div class="t-row">• Anti-drivers: <em>${a.percentage}% (${a.count})</em></div>`;
+                h += `<div class="t-row" style="margin-left:1rem">média <em style="color:#2E4A60">${a.avg.toFixed(0)}</em>, min <em>${a.min.toFixed(0)}</em></div>`;
+            }
         }
         
         h += `<div class="t-row">Relevância média: <em>${((m.avg_relevancia || 0)*100).toFixed(1)}%</em></div>`;
         h += `<div class="t-row">Associações: <em>${m.count || 0}</em></div>`;
         h += `<div class="t-hint">Clique para expandir / colapsar</div>`;
     }
+    
+    // NOVO: Botão "Abrir em nova aba"
+    const currentUrl = new URL(window.location.href);
+    h += `<button onclick="window.open('${currentUrl.href}', '_blank')" style="width:100%;margin-top:0.5rem;padding:0.5rem;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:4px;cursor:pointer;font-size:0.85rem;font-weight:500;transition:all 0.2s ease">🔗 Abrir em nova aba</button>`;
     
     tipEl.innerHTML = h;
     tipEl.style.opacity = '1';
@@ -953,540 +1067,763 @@ function showTip(ev, d) {
 }
 
 function hideTip() {
-    if (tipEl) tipEl.style.opacity = '0';
+    tipEl.style.opacity = '0';
 }
 
-function doSearch(query) {
-    if (!rootNode) return;
-    
-    const ql = query.toLowerCase();
-    if (!ql) {
-        d3.selectAll('.node').classed('highlighted', false).classed('dimmed', false);
-        return;
-    }
-    
-    const matches = [];
-    rootNode.descendants().forEach(d => {
-        if (d.data && d.data.name && d.data.name.toLowerCase().includes(ql)) matches.push(d);
-    });
-    
-    if (matches.length === 0) {
-        d3.selectAll('.node').classed('highlighted', false).classed('dimmed', true);
-        return;
-    }
-    
-    const firstMatch = matches[0];
-    let node = firstMatch;
-    while (node) {
-        if (node._children) {
-            node.children = node._children;
-            node._children = null;
-        }
-        node = node.parent;
-    }
-    
-    doUpdate(firstMatch);
-    
-    d3.selectAll('.node')
-        .classed('highlighted', d => d.data && d.data.name && d.data.name.toLowerCase().includes(ql))
-        .classed('dimmed', d => !d.data || !d.data.name || !d.data.name.toLowerCase().includes(ql));
-    
-    setTimeout(() => {
-        if (svgEl && zoomBeh && firstMatch) {
-            const container = document.getElementById('svg-container');
-            const scale = d3.zoomTransform(svgEl.node()).k;
-            const tx = container.clientWidth / 2 - firstMatch.y * scale;
-            const ty = container.clientHeight / 2 - firstMatch.x * scale;
-            svgEl.transition().duration(500)
-                .call(zoomBeh.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
-        }
-    }, 400);
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+
+function getTextColor() {
+    const theme = document.documentElement.getAttribute('data-theme');
+    return theme === 'dark' ? '#e2e8f0' : '#0f172a';
 }
 
-function exportToPNG() {
-    const svgElement = document.querySelector('#svg-container svg');
-    if (!svgElement) {
-        alert('Nenhum dendrograma para exportar');
-        return;
-    }
-    
-    showLoading('Gerando imagem...');
-    
-    const svgData = new XMLSerializer().serializeToString(svgElement);
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    
-    const img = new Image();
-    const svg = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svg);
-    
-    img.onload = function() {
-        canvas.width = svgElement.clientWidth;
-        canvas.height = svgElement.clientHeight;
-        ctx.drawImage(img, 0, 0);
-        
-        canvas.toBlob(function(blob) {
-            const link = document.createElement('a');
-            link.download = `dendrograma_${state.onda}_${Date.now()}.png`;
-            link.href = URL.createObjectURL(blob);
-            link.click();
-            hideLoading();
-        });
-        
-        URL.revokeObjectURL(url);
+function getNodeStroke() {
+    const theme = document.documentElement.getAttribute('data-theme');
+    return theme === 'dark' ? '#1e293b' : '#e2e8f0';
+}
+
+function getAgregacaoLabel() {
+    const labels = {
+        'weighted_mean': 'Ponderada',
+        'mean': 'Simples',
+        'median': 'Mediana',
+        'max': 'Máximo'
     };
-    
-    img.src = url;
+    return labels[state.agregacao] || 'Ponderada';
 }
 
-document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
-        if (e.key !== 'Escape') return;
+function getNodeScore(d) {
+    if (!d || !d.data || !d.data.metrics) return 0;
+    const m = d.data.metrics;
+    
+    if (d.data.leaf) {
+        return m.score_nexas || 0;
     }
     
-    switch(e.key.toLowerCase()) {
-        case 'f':
-            e.preventDefault();
-            toggleFullscreen();
-            break;
-        case 'e':
-            e.preventDefault();
-            document.getElementById('btn-expand')?.click();
-            break;
-        case 'c':
-            e.preventDefault();
-            document.getElementById('btn-collapse')?.click();
-            break;
-        case 'z':
-            e.preventDefault();
-            fitToScreen();
-            break;
-        case '/':
-            e.preventDefault();
-            document.getElementById('search-box')?.focus();
-            break;
-        case 'escape':
-            if (isFullscreen) toggleFullscreen();
-            break;
+    switch (state.agregacao) {
+        case 'mean':
+            return m.avg_score || 0;
+        case 'median':
+            return m.median_score || m.avg_score || 0;
+        case 'max':
+            return m.max_score || m.avg_score || 0;
+        case 'weighted_mean':
+        default:
+            return m.avg_score || 0;
     }
-});
+}
 
-async function loadData() {
-    const p = { 
-        onda: state.onda, 
-        assunto: state.assunto, 
-        pergunta: state.pergunta,
-        agregacao: state.agregacao
-    };
-    // Só enviar direcao se não for null
-    if (state.direcao) {
-        p.direcao = state.direcao;
-    }
-    try {
-        showLoading('Carregando dados...');
-        const [tree, met] = await Promise.all([
-            get(`${API}/tree`, p),
-            get(`${API}/metricas`, p),
-        ]);
-        
-        console.log('✅ Dados recebidos:', tree);
-        
-        if (!tree || !tree.tree) {
-            throw new Error('Estrutura de dados inválida');
+function wrapText(text, maxChars = 35) {
+    if (!text || text.length <= maxChars) return [text || ''];
+    const words = text.split(' ');
+    const lines = [];
+    let current = '';
+    
+    for (const word of words) {
+        const test = current ? `${current} ${word}` : word;
+        if (test.length <= maxChars) {
+            current = test;
+        } else {
+            if (current) lines.push(current);
+            current = word;
         }
-        
-        renderTree(tree);
-        renderMetrics(met);
-        updateContexto(tree.contexto);
-        hideLoading();
-    } catch(e) {
-        hideLoading();
-        const msg = `Erro ao carregar: ${e.message}`;
-        document.getElementById('contexto').textContent = msg;
-        console.error('❌ Erro completo:', e);
     }
+    if (current) lines.push(current);
+    return lines;
 }
 
-function renderTree(data) {
-    const container = document.getElementById('svg-container');
-    container.innerHTML = '';
+function showLoading(text = 'Carregando...') {
+    loadingTextEl.textContent = text;
+    loadingEl.style.display = 'flex';
+}
 
-    const width = container.clientWidth;
-    const height = Math.max(container.clientHeight, 600);
+function hideLoading() {
+    loadingEl.style.display = 'none';
+}
 
-    try {
-        rootNode = d3.hierarchy(data.tree);
-        if (!rootNode) {
-            throw new Error('Falha ao criar hierarquia');
-        }
-        
-        rootNode.x0 = height / 2;
-        rootNode.y0 = 0;
-
-        svgEl = d3.select(container).append('svg')
-            .attr('width', '100%')
-            .attr('height', height)
-            .style('background', 'transparent');
-
-        const g = svgEl.append('g');
-
-        zoomBeh = d3.zoom()
-            .scaleExtent([0.1, 5])
-            .on('zoom', (event) => g.attr('transform', event.transform));
-
-        svgEl.call(zoomBeh);
-
-        doUpdate = function(source) {
-            const treeLayout = d3.tree().nodeSize([layout.spacingY, layout.spacingX]);
-            treeLayout(rootNode);
-
-            const nodes = rootNode.descendants();
-            const links = rootNode.links();
-
-            const link = g.selectAll('.link')
-                .data(links, d => d.target.data.name);
-
-            link.exit().transition().duration(300)
-                .attr('d', () => {
-                    const o = { x: source.x, y: source.y };
-                    return diagonal(o, o);
-                })
-                .style('opacity', 0)
-                .remove();
-
-            const linkEnter = link.enter().insert('path', 'g')
-                .attr('class', 'link')
-                .attr('d', () => {
-                    const o = { x: source.x0, y: source.y0 };
-                    return diagonal(o, o);
-                })
-                .style('opacity', 0)
-                .style('fill', 'none');
-
-            const linkUpdate = linkEnter.merge(link);
-
-            linkUpdate.transition().duration(300)
-                .attr('d', d => diagonal(d.source, d.target))
-                .style('opacity', 1)
-                .style('stroke', d => linkColor(d.target))
-                .style('stroke-width', d => linkWidth(d.target));
-
-            const node = g.selectAll('.node')
-                .data(nodes, d => d.data.name);
-
-            node.exit().transition().duration(300)
-                .attr('transform', () => `translate(${source.y},${source.x})`)
-                .style('opacity', 0)
-                .remove();
-
-            const nodeEnter = node.enter().append('g')
-                .attr('class', 'node')
-                .attr('transform', () => `translate(${source.y0},${source.x0})`)
-                .style('opacity', 0)
-                .style('cursor', 'pointer')
-                .on('click', (event, d) => {
-                    if (d.children) {
-                        d._children = d.children;
-                        d.children = null;
-                    } else if (d._children) {
-                        d.children = d._children;
-                        d._children = null;
-                    }
-                    doUpdate(d);
-                })
-                .on('mouseover', (event, d) => showTip(event, d))
-                .on('mousemove', (event) => {
-                    tipEl.style.left = `${event.clientX + 16}px`;
-                    tipEl.style.top = `${event.clientY - 10}px`;
-                })
-                .on('mouseout', hideTip);
-
-            nodeEnter.append('circle')
-                .attr('r', 5)
-                .style('stroke', getNodeStroke())
-                .style('stroke-width', 1.5);
-
-            nodeEnter.each(function(d) {
-                const textGroup = d3.select(this);
-                const lines = wrapText(d.data.name || '', 35);
-                const isLeft = d.children || d._children;
-                
-                lines.forEach((line, i) => {
-                    textGroup.append('text')
-                        .attr('class', 'node-text-line')
-                        .attr('dy', `${i * 1.1}em`)
-                        .attr('x', isLeft ? -8 : 8)
-                        .attr('text-anchor', isLeft ? 'end' : 'start')
-                        .text(line)
-                        .style('font-size', '12px')
-                        .style('fill', getTextColor())
-                        .style('pointer-events', 'none');
-                });
-            });
-
-            const nodeUpdate = nodeEnter.merge(node);
-
-            nodeUpdate.transition().duration(300)
-                .attr('transform', d => `translate(${d.y},${d.x})`)
-                .style('opacity', 1);
-
-            nodeUpdate.select('circle')
-                .style('fill', nodeColor)
-                .style('stroke', getNodeStroke());
-
-            nodes.forEach(d => {
-                d.x0 = d.x;
-                d.y0 = d.y;
-            });
-
-            function diagonal(s, d) {
-                return `M ${s.y} ${s.x}
-                        C ${(s.y + d.y) / 2} ${s.x},
-                          ${(s.y + d.y) / 2} ${d.x},
-                          ${d.y} ${d.x}`;
-            }
-        };
-
-        doUpdate(rootNode);
-        
-        console.log('🎨 Árvore renderizada com sistema HÍBRIDO + tema responsivo');
-        
-    } catch(e) {
-        console.error('❌ Erro ao renderizar:', e);
-        container.innerHTML = `<div class="viz-placeholder">Erro: ${e.message}</div>`;
+function setContexto(onda, assunto, pergunta, direcao) {
+    let txt = `${onda} → ${assunto} | ${pergunta}`;
+    if (direcao) {
+        txt += ` [${direcao === 'DRIVER' ? 'Só Drivers' : 'Só Anti-drivers'}]`;
     }
+    document.getElementById('contexto').textContent = txt;
 }
 
-function fitToScreen() {
-    if (!svgEl || !zoomBeh || !rootNode) return;
-    try {
-        const container = document.getElementById('svg-container');
-        const bounds = svgEl.select('g').node().getBBox();
-        const width = container.clientWidth;
-        const height = container.clientHeight;
-        const fullWidth = bounds.width;
-        const fullHeight = bounds.height;
-        const midX = bounds.x + fullWidth / 2;
-        const midY = bounds.y + fullHeight / 2;
-        const scale = 0.9 / Math.max(fullWidth / width, fullHeight / height);
-        const tx = width / 2 - midX * scale;
-        const ty = height / 2 - midY * scale;
-        svgEl.transition().duration(500).call(zoomBeh.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
-    } catch(e) {
-        console.error('Erro no fit:', e);
+function updateMetricas(data) {
+    if (!data || !data.tree) {
+        document.getElementById('met-total').textContent = '—';
+        document.getElementById('met-drivers').textContent = '—';
+        document.getElementById('met-anti').textContent = '—';
+        document.getElementById('met-score').textContent = '—';
+        return;
     }
-}
-
-function renderMetrics(met) {
-    document.getElementById('met-total').textContent = (met.total_cruzamentos || 0).toLocaleString();
-    document.getElementById('met-drivers').textContent = (met.total_drivers || 0).toLocaleString();
-    document.getElementById('met-anti').textContent = (met.total_anti_drivers || 0).toLocaleString();
-    document.getElementById('met-score').textContent = (met.top_score || 0).toFixed(0);
-}
-
-function updateContexto(ctx) {
-    document.getElementById('contexto').textContent = 
-        `${ctx.assunto_coluna} → ${ctx.pergunta_coluna} | Onda: ${ctx.onda}`;
-}
-
-async function init() {
-    tipEl = document.getElementById('tooltip');
     
-    initTheme();
-    initControls();
+    let total = 0;
+    let drivers = 0;
+    let antiDrivers = 0;
+    let maxScore = -Infinity;
     
-    const urlParams = new URLSearchParams(window.location.search);
-    const ondaParam = urlParams.get('onda');
-    const assuntoParam = urlParams.get('assunto');
-    const perguntaParam = urlParams.get('pergunta');
-    const direcaoParam = urlParams.get('direcao');
-    const agregacaoParam = urlParams.get('agregacao');
-
-    try {
-        const ondas = await get(`${API}/ondas`);
-        const sel = document.getElementById('onda-select');
-        sel.innerHTML = '<option value="">Selecione a onda</option>';
-        ondas.forEach(o => {
-            const opt = document.createElement('option');
-            opt.value = o.codigo;
-            opt.textContent = `${o.codigo} (${(o.total_registros||0).toLocaleString()} reg.)`;
-            sel.appendChild(opt);
-        });
-        
-        sel.addEventListener('change', async e => {
-            state.onda = e.target.value;
-            updateURL();
-            if (!state.onda) return;
-            const f = await get(`${API}/filtros`, { onda: state.onda });
-            buildAssuntoSelect(f);
-        });
-        
-        if (ondaParam) {
-            sel.value = ondaParam;
-            state.onda = ondaParam;
-            const f = await get(`${API}/filtros`, { onda: state.onda });
-            await buildAssuntoSelect(f);
+    function traverse(node) {
+        if (node.leaf && node.metrics) {
+            total++;
+            const dir = node.metrics.direcao;
+            if (dir === 'DRIVER') drivers++;
+            else if (dir === 'ANTI-DRIVER') antiDrivers++;
             
-            if (assuntoParam) {
-                document.getElementById('assunto-select').value = assuntoParam;
-                state.assunto = assuntoParam;
-                const perguntas = JSON.parse(document.getElementById('assunto-select').dataset.perguntas);
-                await buildPerguntaSelect(perguntas[state.assunto] || []);
-                
-                if (perguntaParam) {
-                    document.getElementById('pergunta-select').value = perguntaParam;
-                    state.pergunta = perguntaParam;
-                    
-                    if (direcaoParam) {
-                        document.getElementById('direcao-select').value = direcaoParam;
-                        state.direcao = direcaoParam;
-                    }
-                    
-                    if (agregacaoParam) {
-                        document.getElementById('agregacao-select').value = agregacaoParam;
-                        state.agregacao = agregacaoParam;
-                    }
-                    
-                    loadData();
-                }
-            }
+            const score = Math.abs(node.metrics.score_nexas || 0);
+            if (score > maxScore) maxScore = score;
         }
-        
-    } catch(e) {
-        document.getElementById('contexto').textContent = 'Erro ao conectar com a API.';
-        console.error('Erro na inicialização:', e);
+        if (node.children) {
+            node.children.forEach(traverse);
+        }
     }
+    
+    traverse(data.tree);
+    
+    document.getElementById('met-total').textContent = total;
+    document.getElementById('met-drivers').textContent = drivers;
+    document.getElementById('met-anti').textContent = antiDrivers;
+    document.getElementById('met-score').textContent = maxScore === -Infinity ? '—' : `+${maxScore.toFixed(0)}`;
 }
 
-async function buildAssuntoSelect(filtros) {
-    const sel = document.getElementById('assunto-select');
-    sel.disabled = false;
-    sel.innerHTML = '<option value="">Selecione o assunto</option>';
-    sel.dataset.perguntas = JSON.stringify(filtros.perguntas);
-    filtros.assuntos.forEach(a => {
-        const opt = document.createElement('option');
-        opt.value = a;
-        opt.textContent = a;
-        sel.appendChild(opt);
-    });
-    sel.addEventListener('change', e => {
-        state.assunto = e.target.value;
-        updateURL();
-        if (!state.assunto) return;
-        const perguntas = JSON.parse(sel.dataset.perguntas);
-        buildPerguntaSelect(perguntas[state.assunto] || []);
-    });
+function updateURL() {
+    const params = new URLSearchParams();
+    if (state.onda) params.set('onda', state.onda);
+    if (state.assunto) params.set('assunto', state.assunto);
+    if (state.pergunta) params.set('pergunta', state.pergunta);
+    if (state.direcao) params.set('direcao', state.direcao);
+    
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
 }
 
-async function buildPerguntaSelect(perguntas) {
-    const sel = document.getElementById('pergunta-select');
-    sel.disabled = false;
-    sel.innerHTML = '<option value="">Selecione a pergunta</option>';
-    perguntas.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p;
-        opt.textContent = p;
-        sel.appendChild(opt);
-    });
-    sel.addEventListener('change', e => {
-        state.pergunta = e.target.value;
-        updateURL();
-        if (state.pergunta) loadData();
-    });
+function loadFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const onda = params.get('onda');
+    const assunto = params.get('assunto');
+    const pergunta = params.get('pergunta');
+    const direcao = params.get('direcao');
+    
+    if (onda) state.onda = onda;
+    if (assunto) state.assunto = assunto;
+    if (pergunta) state.pergunta = pergunta;
+    if (direcao) state.direcao = direcao;
+    
+    return { onda, assunto, pergunta, direcao };
 }
+
+// ═══════════════════════════════════════════════════════════
+// TEMA CLARO/ESCURO
+// ═══════════════════════════════════════════════════════════
 
 function initTheme() {
     const btn = document.getElementById('theme-toggle');
     const icon = document.getElementById('toggle-icon');
+    
+    let isDark = true;
+    document.documentElement.setAttribute('data-theme', 'dark');
+    icon.textContent = '☀️';
+    
     btn.addEventListener('click', () => {
-        const isDark = document.documentElement.dataset.theme === 'dark';
-        document.documentElement.dataset.theme = isDark ? 'light' : 'dark';
-        icon.textContent = isDark ? '🌙' : '☀️';
+        isDark = !isDark;
+        const theme = isDark ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        icon.textContent = isDark ? '☀️' : '🌙';
         
-        // Atualizar cores do SVG quando trocar tema
-        if (rootNode && doUpdate) {
+        if (svg) {
             d3.selectAll('.node-text-line').style('fill', getTextColor());
             d3.selectAll('.node circle').style('stroke', getNodeStroke());
         }
     });
 }
 
-function initControls() {
-    document.getElementById('slider-y').addEventListener('input', e => {
-        layout.spacingY = +e.target.value;
-        document.getElementById('val-y').textContent = e.target.value;
-        if (rootNode && doUpdate) doUpdate(rootNode);
-    });
+// ═══════════════════════════════════════════════════════════
+// API CALLS
+// ═══════════════════════════════════════════════════════════
+
+async function loadData() {
+    if (!state.onda || !state.assunto || !state.pergunta) return;
     
-    document.getElementById('slider-x').addEventListener('input', e => {
-        layout.spacingX = +e.target.value;
-        document.getElementById('val-x').textContent = e.target.value;
-        if (rootNode && doUpdate) doUpdate(rootNode);
-    });
+    showLoading('Carregando árvore...');
     
-    document.getElementById('btn-zoom-in').addEventListener('click', () => {
-        if (!svgEl || !zoomBeh) return;
-        svgEl.transition().call(zoomBeh.scaleBy, 1.3);
-    });
-    
-    document.getElementById('btn-zoom-out').addEventListener('click', () => {
-        if (!svgEl || !zoomBeh) return;
-        svgEl.transition().call(zoomBeh.scaleBy, 0.7);
-    });
-    
-    document.getElementById('btn-zoom-fit').addEventListener('click', fitToScreen);
-    
-    document.getElementById('btn-expand').addEventListener('click', () => {
-        if (!rootNode || !doUpdate) return;
-        rootNode.descendants().forEach(d => {
-            if (d._children) {
-                d.children = d._children;
-                d._children = null;
-            }
-        });
-        doUpdate(rootNode);
-    });
-    
-    document.getElementById('btn-collapse').addEventListener('click', () => {
-        if (!rootNode || !doUpdate) return;
-        rootNode.descendants().forEach((d, i) => {
-            if (i > 0 && d.children) {
-                d._children = d.children;
-                d.children = null;
-            }
-        });
-        doUpdate(rootNode);
-    });
-    
-    document.getElementById('search-box').addEventListener('input', e => doSearch(e.target.value));
-    document.getElementById('btn-clear-search').addEventListener('click', () => {
-        document.getElementById('search-box').value = '';
-        doSearch('');
-    });
-    
-    document.getElementById('direcao-select').addEventListener('change', e => {
-        state.direcao = e.target.value || null;  // Converte string vazia para null
+    try {
+        const params = new URLSearchParams();
+        params.set('onda', state.onda);
+        params.set('assunto', state.assunto);
+        params.set('pergunta', state.pergunta);
+        if (state.direcao) params.set('direcao', state.direcao);
+        
+        const resp = await fetch(`/api/tree?${params.toString()}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        
+        const data = await resp.json();
+        state.treeData = data;
+        
+        setContexto(state.onda, state.assunto, state.pergunta, state.direcao);
+        updateMetricas(data);
         updateURL();
-        if (state.pergunta) loadData();
-    });
+        renderTree(data.tree);
+    } catch (err) {
+        console.error('Erro ao carregar árvore:', err);
+        alert('Erro ao carregar dados: ' + err.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function loadOndas() {
+    try {
+        const resp = await fetch('/api/ondas');
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const ondas = await resp.json();
+        
+        const sel = document.getElementById('onda-select');
+        sel.innerHTML = '<option value="">Selecione uma onda</option>';
+        ondas.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.codigo;
+            opt.textContent = o.codigo;
+            sel.appendChild(opt);
+        });
+        
+        if (state.onda) {
+            sel.value = state.onda;
+            loadAssuntos();
+        }
+    } catch (err) {
+        console.error('Erro ao carregar ondas:', err);
+    }
+}
+
+async function loadAssuntos() {
+    if (!state.onda) return;
     
-    document.getElementById('agregacao-select').addEventListener('change', e => {
-        state.agregacao = e.target.value;
-        updateURL();
+    try {
+        const resp = await fetch(`/api/assuntos?onda=${state.onda}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const assuntos = await resp.json();
+        
+        const sel = document.getElementById('assunto-select');
+        const overlayAssunto = document.getElementById('overlay-assunto');
+        
+        sel.innerHTML = '<option value="">Selecione um assunto</option>';
+        overlayAssunto.innerHTML = '<option value="">Selecione um assunto</option>';
+        
+        assuntos.forEach(a => {
+            const opt1 = document.createElement('option');
+            opt1.value = a;
+            opt1.textContent = a;
+            sel.appendChild(opt1);
+            
+            const opt2 = document.createElement('option');
+            opt2.value = a;
+            opt2.textContent = a;
+            overlayAssunto.appendChild(opt2);
+        });
+        
+        sel.disabled = false;
+        overlayAssunto.disabled = false;
+        
+        if (state.assunto) {
+            sel.value = state.assunto;
+            overlayAssunto.value = state.assunto;
+            loadPerguntas();
+        }
+    } catch (err) {
+        console.error('Erro ao carregar assuntos:', err);
+    }
+}
+
+async function loadPerguntas() {
+    if (!state.onda || !state.assunto) return;
+    
+    try {
+        const resp = await fetch(`/api/perguntas?onda=${state.onda}&assunto=${state.assunto}`);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const perguntas = await resp.json();
+        
+        const sel = document.getElementById('pergunta-select');
+        const overlayPergunta = document.getElementById('overlay-pergunta');
+        
+        sel.innerHTML = '<option value="">Selecione uma pergunta</option>';
+        overlayPergunta.innerHTML = '<option value="">Selecione uma pergunta</option>';
+        
+        perguntas.forEach(p => {
+            const opt1 = document.createElement('option');
+            opt1.value = p;
+            opt1.textContent = p;
+            sel.appendChild(opt1);
+            
+            const opt2 = document.createElement('option');
+            opt2.value = p;
+            opt2.textContent = p;
+            overlayPergunta.appendChild(opt2);
+        });
+        
+        sel.disabled = false;
+        overlayPergunta.disabled = false;
+        
         if (state.pergunta) {
-            showLoading('Recalculando com ' + getAgregacaoLabel() + '...');
+            sel.value = state.pergunta;
+            overlayPergunta.value = state.pergunta;
             loadData();
+        }
+    } catch (err) {
+        console.error('Erro ao carregar perguntas:', err);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDERIZAÇÃO DO DENDROGRAMA
+// ═══════════════════════════════════════════════════════════
+
+function renderTree(data) {
+    if (!data) return;
+    
+    const container = document.getElementById('svg-container');
+    container.innerHTML = '';
+    
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    
+    svg = d3.select('#svg-container')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+    
+    g = svg.append('g');
+    
+    const zoom = d3.zoom()
+        .scaleExtent([0.1, 10])
+        .on('zoom', (event) => {
+            g.attr('transform', event.transform);
+            state.zoomLevel = event.transform.k;
+            document.getElementById('zoom-pct').textContent = Math.round(event.transform.k * 100) + '%';
+        });
+    
+    svg.call(zoom);
+    
+    treemap = d3.tree().nodeSize([state.nodeYSpacing, state.nodeXSpacing]);
+    root = d3.hierarchy(data);
+    
+    root.x0 = height / 2;
+    root.y0 = 0;
+    
+    root.children?.forEach(collapse);
+    update(root);
+    
+    const initialTransform = d3.zoomIdentity.translate(100, height / 2).scale(1);
+    svg.call(zoom.transform, initialTransform);
+}
+
+function update(source) {
+    const treeData = treemap(root);
+    const nodes = treeData.descendants();
+    const links = treeData.links();
+    
+    nodes.forEach(d => { d.y = d.depth * state.nodeXSpacing; });
+    
+    const node = g.selectAll('g.node')
+        .data(nodes, d => d.id || (d.id = ++i));
+    
+    const nodeEnter = node.enter().append('g')
+        .attr('class', 'node')
+        .attr('transform', d => `translate(${source.y0},${source.x0})`)
+        .on('click', click)
+        .on('mouseover', (ev, d) => showTip(ev, d))
+        .on('mousemove', (ev, d) => {
+            tipEl.style.left = `${ev.clientX + 16}px`;
+            tipEl.style.top = `${ev.clientY - 10}px`;
+        })
+        .on('mouseout', hideTip);
+    
+    nodeEnter.append('circle')
+        .attr('r', 5)
+        .style('fill', d => nodeColor(d))
+        .style('stroke', getNodeStroke())
+        .style('stroke-width', '2px');
+    
+    nodeEnter.append('text')
+        .attr('class', 'node-text')
+        .attr('dy', '.35em')
+        .attr('x', d => d.children || d._children ? -10 : 10)
+        .attr('text-anchor', d => d.children || d._children ? 'end' : 'start')
+        .style('fill', getTextColor())
+        .style('font-size', '11px')
+        .style('font-weight', '500')
+        .each(function(d) {
+            const lines = wrapText(d.data.name);
+            const textEl = d3.select(this);
+            lines.forEach((line, i) => {
+                textEl.append('tspan')
+                    .attr('class', 'node-text-line')
+                    .attr('x', d.children || d._children ? -10 : 10)
+                    .attr('dy', i === 0 ? 0 : '1.1em')
+                    .text(line)
+                    .style('fill', getTextColor());
+            });
+        });
+    
+    const nodeUpdate = nodeEnter.merge(node);
+    
+    nodeUpdate.transition()
+        .duration(500)
+        .attr('transform', d => `translate(${d.y},${d.x})`);
+    
+    nodeUpdate.select('circle')
+        .style('fill', d => nodeColor(d))
+        .style('stroke', getNodeStroke())
+        .attr('r', 5);
+    
+    const nodeExit = node.exit().transition()
+        .duration(500)
+        .attr('transform', d => `translate(${source.y},${source.x})`)
+        .remove();
+    
+    nodeExit.select('circle').attr('r', 0);
+    nodeExit.select('text').style('opacity', 0);
+    
+    diagonal = d3.linkHorizontal()
+        .x(d => d.y)
+        .y(d => d.x);
+    
+    const link = g.selectAll('path.link')
+        .data(links, d => d.target.id);
+    
+    const linkEnter = link.enter().insert('path', 'g')
+        .attr('class', 'link')
+        .attr('d', d => {
+            const o = {x: source.x0, y: source.y0};
+            return diagonal({source: o, target: o});
+        })
+        .style('fill', 'none')
+        .style('stroke', d => linkColor(d.target))
+        .style('stroke-width', d => {
+            const score = Math.abs(getNodeScore(d.target));
+            return Math.max(1, Math.min(4, score / 200));
+        })
+        .style('opacity', 0.6);
+    
+    const linkUpdate = linkEnter.merge(link);
+    
+    linkUpdate.transition()
+        .duration(500)
+        .attr('d', diagonal)
+        .style('stroke', d => linkColor(d.target))
+        .style('stroke-width', d => {
+            const score = Math.abs(getNodeScore(d.target));
+            return Math.max(1, Math.min(4, score / 200));
+        });
+    
+    link.exit().transition()
+        .duration(500)
+        .attr('d', d => {
+            const o = {x: source.x, y: source.y};
+            return diagonal({source: o, target: o});
+        })
+        .remove();
+    
+    nodes.forEach(d => {
+        d.x0 = d.x;
+        d.y0 = d.y;
+    });
+}
+
+let i = 0;
+
+function click(event, d) {
+    if (d.children) {
+        d._children = d.children;
+        d.children = null;
+    } else {
+        d.children = d._children;
+        d._children = null;
+    }
+    update(d);
+}
+
+function collapse(d) {
+    if (d.children) {
+        d._children = d.children;
+        d._children.forEach(collapse);
+        d.children = null;
+    }
+}
+
+function expand(d) {
+    if (d._children) {
+        d.children = d._children;
+        d.children.forEach(expand);
+        d._children = null;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONTROLES DE ZOOM, BUSCA, EXPORT
+// ═══════════════════════════════════════════════════════════
+
+function zoomIn() {
+    const newScale = state.zoomLevel * 1.2;
+    const t = d3.zoomIdentity.translate(100, svg.node().clientHeight / 2).scale(newScale);
+    svg.transition().duration(300).call(d3.zoom().transform, t);
+}
+
+function zoomOut() {
+    const newScale = state.zoomLevel / 1.2;
+    const t = d3.zoomIdentity.translate(100, svg.node().clientHeight / 2).scale(newScale);
+    svg.transition().duration(300).call(d3.zoom().transform, t);
+}
+
+function zoomFit() {
+    const t = d3.zoomIdentity.translate(100, svg.node().clientHeight / 2).scale(1);
+    svg.transition().duration(500).call(d3.zoom().transform, t);
+}
+
+function searchNodes(query) {
+    if (!query || !root) {
+        g.selectAll('.node').classed('highlighted', false).classed('dimmed', false);
+        return;
+    }
+    
+    const q = query.toLowerCase();
+    const nodes = root.descendants();
+    const matches = nodes.filter(d => d.data.name?.toLowerCase().includes(q));
+    
+    g.selectAll('.node').classed('dimmed', true);
+    
+    matches.forEach(match => {
+        let current = match;
+        while (current) {
+            if (current._children) {
+                current.children = current._children;
+                current._children = null;
+            }
+            current = current.parent;
         }
     });
     
-    document.getElementById('btn-fullscreen').addEventListener('click', toggleFullscreen);
-    document.getElementById('btn-exit-fullscreen').addEventListener('click', toggleFullscreen);
-    document.getElementById('btn-export').addEventListener('click', exportToPNG);
+    update(root);
+    
+    g.selectAll('.node').each(function(d) {
+        const isMatch = matches.includes(d);
+        d3.select(this).classed('highlighted', isMatch).classed('dimmed', !isMatch);
+    });
 }
 
-console.log('🎨 NEXAS Analytics v2.0 - Sistema HÍBRIDO + Tema Responsivo ativado');
+function exportPNG() {
+    showLoading('Gerando PNG...');
+    
+    setTimeout(() => {
+        try {
+            const svgEl = svg.node();
+            const bbox = g.node().getBBox();
+            const padding = 40;
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = bbox.width + padding * 2;
+            canvas.height = bbox.height + padding * 2;
+            
+            const ctx = canvas.getContext('2d');
+            const theme = document.documentElement.getAttribute('data-theme');
+            ctx.fillStyle = theme === 'dark' ? '#0f172a' : '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const svgString = new XMLSerializer().serializeToString(svgEl);
+            const svgBlob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(svgBlob);
+            
+            const img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, padding - bbox.x, padding - bbox.y);
+                
+                canvas.toBlob(blob => {
+                    const link = document.createElement('a');
+                    link.download = `nexas-dendrograma-${state.onda}-${Date.now()}.png`;
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                    
+                    URL.revokeObjectURL(url);
+                    hideLoading();
+                });
+            };
+            img.src = url;
+        } catch (err) {
+            console.error('Erro ao exportar:', err);
+            alert('Erro ao exportar PNG');
+            hideLoading();
+        }
+    }, 100);
+}
+function resizeDendrogram() {
+    if (!svg || !root) return; // Só roda se o gráfico já existir
 
-init();
+    const container = document.getElementById('svg-container');
+    const newWidth = container.clientWidth;
+    const newHeight = container.clientHeight;
+
+    // 1. Atualiza as dimensões do SVG raiz
+    d3.select('#svg-container svg')
+        .attr('width', newWidth)
+        .attr('height', newHeight);
+
+    // 2. Reposiciona o nó raiz (root) no centro da nova altura
+    root.x0 = newHeight / 2;
+    root.y0 = 0;
+
+    // 3. Opcional: Re-centraliza a câmera usando a identidade de zoom anterior
+    // Se quiser que o gráfico sempre volte para o meio da tela ao maximizar/minimizar:
+    const t = d3.zoomIdentity.translate(100, newHeight / 2).scale(state.zoomLevel);
+    svg.transition().duration(300).call(d3.zoom().transform, t);
+    
+    // 4. Redesenha a árvore
+    update(root);
+}
+// ═══════════════════════════════════════════════════════════
+// INICIALIZAÇÃO
+// ═══════════════════════════════════════════════════════════
+
+function init() {
+    initTheme();
+    
+    const urlState = loadFromURL();
+    loadOndas();
+    
+    // Event listeners - Modo Compacto
+    document.getElementById('btn-toggle-compact').addEventListener('click', toggleCompactMode);
+    
+    // Event listeners - Overlay
+    document.getElementById('btn-filters').addEventListener('click', openFiltersOverlay);
+    document.getElementById('filters-overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'filters-overlay') closeFiltersOverlay();
+    });
+    
+    // Event listeners - Selects principais
+    document.getElementById('onda-select').addEventListener('change', (e) => {
+        state.onda = e.target.value;
+        state.assunto = null;
+        state.pergunta = null;
+        document.getElementById('assunto-select').disabled = true;
+        document.getElementById('pergunta-select').disabled = true;
+        if (state.onda) loadAssuntos();
+    });
+    
+    document.getElementById('assunto-select').addEventListener('change', (e) => {
+        state.assunto = e.target.value;
+        state.pergunta = null;
+        document.getElementById('pergunta-select').disabled = true;
+        if (state.assunto) loadPerguntas();
+    });
+    
+    document.getElementById('pergunta-select').addEventListener('change', (e) => {
+        state.pergunta = e.target.value;
+        if (state.pergunta) loadData();
+    });
+    
+    document.getElementById('direcao-select').addEventListener('change', (e) => {
+        state.direcao = e.target.value || null;
+        if (state.pergunta) loadData();
+    });
+    
+    // Event listeners - Selects do overlay
+    document.getElementById('overlay-assunto').addEventListener('change', (e) => {
+        state.assunto = e.target.value;
+        document.getElementById('assunto-select').value = e.target.value;
+        state.pergunta = null;
+        if (state.assunto) loadPerguntas();
+    });
+    
+    document.getElementById('overlay-pergunta').addEventListener('change', (e) => {
+        state.pergunta = e.target.value;
+        document.getElementById('pergunta-select').value = e.target.value;
+        if (state.pergunta) loadData();
+    });
+    
+    document.getElementById('overlay-direcao').addEventListener('change', (e) => {
+        state.direcao = e.target.value || null;
+        document.getElementById('direcao-select').value = e.target.value;
+        if (state.pergunta) loadData();
+    });
+    
+    document.getElementById('agregacao-select').addEventListener('change', (e) => {
+        state.agregacao = e.target.value;
+        if (root) update(root);
+    });
+    
+    // Event listeners - Zoom
+    document.getElementById('btn-zoom-in').addEventListener('click', zoomIn);
+    document.getElementById('btn-zoom-out').addEventListener('click', zoomOut);
+    document.getElementById('btn-zoom-fit').addEventListener('click', zoomFit);
+    
+    // Event listeners - Sliders
+    document.getElementById('slider-y').addEventListener('input', (e) => {
+        state.nodeYSpacing = +e.target.value;
+        document.getElementById('val-y').textContent = e.target.value;
+        if (root) {
+            treemap.nodeSize([state.nodeYSpacing, state.nodeXSpacing]);
+            update(root);
+        }
+    });
+    
+    document.getElementById('slider-x').addEventListener('input', (e) => {
+        state.nodeXSpacing = +e.target.value;
+        document.getElementById('val-x').textContent = e.target.value;
+        if (root) {
+            treemap.nodeSize([state.nodeYSpacing, state.nodeXSpacing]);
+            update(root);
+        }
+    });
+    
+    // Event listeners - Busca
+    document.getElementById('search-box').addEventListener('input', (e) => {
+        searchNodes(e.target.value);
+    });
+    
+    document.getElementById('btn-clear-search').addEventListener('click', () => {
+        document.getElementById('search-box').value = '';
+        searchNodes('');
+    });
+    
+    // Event listeners - Expand/Collapse
+    document.getElementById('btn-expand').addEventListener('click', () => {
+        if (root) {
+            root.children?.forEach(expand);
+            update(root);
+        }
+    });
+    
+    document.getElementById('btn-collapse').addEventListener('click', () => {
+        if (root) {
+            root.children?.forEach(collapse);
+            update(root);
+        }
+    });
+    
+    // Event listener - Export
+    document.getElementById('btn-export').addEventListener('click', exportPNG);
+    
+    // Hotkeys
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'h' || e.key === 'H') {
+            if (!e.target.matches('input, select, textarea')) {
+                toggleCompactMode();
+            }
+        }
+        if (e.key === 'Escape') {
+            closeFiltersOverlay();
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        // Usa um debounce simples para não sobrecarregar o D3
+        clearTimeout(window.resizeTimer);
+        window.resizeTimer = setTimeout(resizeDendrogram, 250);
+    });
+}
+
+// Inicializar ao carregar
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>

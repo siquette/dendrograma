@@ -32,14 +32,14 @@ class LeafMetrics(BaseModel):
 
 
 class NodeMetrics(BaseModel):
-    """Métricas agregadas de um nó interno (média dos filhos)."""
     avg_score: float
+    min_score: float = 0           # ADICIONAR
+    max_score: float = 0           # ADICIONAR
+    median_score: float = 0        # ADICIONAR
+    std_dev: float = 0             # ADICIONAR
     avg_relevancia: float
-    count: int                 # quantos leaves existem abaixo desse nó
-    min_score: float = 0
-    max_score: float = 0
-    median_score: float = 0
-    std_dev: float = 0
+    count: int
+    composition: dict | None = None  # NOVO!
 
 class TreeNode(BaseModel):
     """

@@ -32,7 +32,50 @@ def listar_ondas(db: Session = Depends(get_db)):
         )
         for o in ondas
     ]
+@router.get("/assuntos")
+def listar_assuntos(
+    onda: str = Query(..., description="Código da onda"),
+    db: Session = Depends(get_db),
+):
+    """Lista assuntos disponíveis para uma onda."""
+    onda_obj = db.query(Onda).filter_by(codigo=onda).first()
+    if not onda_obj:
+        return []
 
+    assuntos = [
+        row[0] for row in
+        db.query(distinct(LiftResultado.assunto_coluna))
+        .filter(LiftResultado.onda_id == onda_obj.id)
+        .order_by(LiftResultado.assunto_coluna)
+        .all()
+    ]
+    
+    return assuntos
+
+
+@router.get("/perguntas")
+def listar_perguntas_simples(
+    onda: str = Query(...),
+    assunto: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    """Perguntas disponíveis para um assunto específico."""
+    onda_obj = db.query(Onda).filter_by(codigo=onda).first()
+    if not onda_obj:
+        return []
+
+    perguntas = [
+        row[0] for row in
+        db.query(distinct(LiftResultado.pergunta_coluna))
+        .filter(
+            LiftResultado.onda_id == onda_obj.id,
+            LiftResultado.assunto_coluna == assunto,
+        )
+        .order_by(LiftResultado.pergunta_coluna)
+        .all()
+    ]
+
+    return perguntas
 
 @router.get("/filtros", response_model=FiltrosResponse)
 def listar_filtros(

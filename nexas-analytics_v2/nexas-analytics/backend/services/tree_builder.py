@@ -13,6 +13,11 @@ A hierarquia é:
     Nível 4 (leaf):  CATEGORIA_LINHA  ← com métricas individuais
 
 Cada nó interno (níveis 1-3) recebe métricas AGREGADAS (média dos filhos).
+
+MODIFICAÇÕES v2.0:
+- Adicionado cálculo de composição Driver/Anti-driver
+- Adicionado min_score, max_score, median_score, std_dev
+- Composição retorna count, percentage, avg, max/min para cada tipo
 """
 
 import logging
@@ -33,8 +38,8 @@ def build_tree(
     onda_codigo: str,
     assunto_coluna: str,
     pergunta_coluna: str,
-    direcao: str | None = None,      # ← Manter direcao com None
-    agregacao: str = "weighted_mean", # ← ADICIONAR esta linha NOVA
+    direcao: str | None = None,
+    agregacao: str | None = None,  # ← PARÂMETRO ADICIONADO AQUI
 ) -> TreeResponse:
     """
     Constrói a árvore hierárquica completa para um cruzamento.
@@ -187,7 +192,7 @@ def build_tree(
     root_node = TreeNode(
         name=root_name,
         nivel="root",
-        metrics=_aggregate_metrics_from_nodes(root_children,  method=agregacao),
+        metrics=_aggregate_metrics_from_nodes(root_children),
         value=_sum_values(root_children),
         children=root_children,
     )
@@ -210,7 +215,7 @@ def build_ramificacao(
     assunto_coluna: str,
     pergunta_coluna: str,
     categoria_coluna: str,
-    direcao: str = "weighted_mean",
+    direcao: str | None = None,
 ) -> TreeNode:
     """
     Constrói apenas a subárvore de uma CATEGORIA_COLUNA específica.
@@ -286,7 +291,7 @@ def build_ramificacao(
             nivel3_node = TreeNode(
                 name=pergunta_linha,
                 nivel="pergunta_linha",
-                metrics=_aggregate_metrics(nivel3_children, method=agregacao),
+                metrics=_aggregate_metrics(nivel3_children),
                 value=_sum_values(nivel3_children),
                 children=nivel3_children,
             )
@@ -300,7 +305,7 @@ def build_ramificacao(
         nivel2_node = TreeNode(
             name=assunto_linha,
             nivel="assunto_linha",
-            metrics=_aggregate_metrics_from_nodes(nivel2_children, method=agregacao),
+            metrics=_aggregate_metrics_from_nodes(nivel2_children),
             value=_sum_values(nivel2_children),
             children=nivel2_children,
         )
@@ -314,7 +319,7 @@ def build_ramificacao(
     return TreeNode(
         name=categoria_coluna,
         nivel="categoria_coluna",
-        metrics=_aggregate_metrics_from_nodes(nivel1_children,  method=agregacao),
+        metrics=_aggregate_metrics_from_nodes(nivel1_children),
         value=_sum_values(nivel1_children),
         children=nivel1_children,
     )
@@ -324,13 +329,61 @@ def build_ramificacao(
 # Funções auxiliares de agregação
 # ============================================
 
-def _aggregate_metrics(leaf_nodes: list[TreeNode], method: str = "weighted_mean") -> NodeMetrics:
+def _calculate_composition(leaf_nodes: list[TreeNode]) -> dict | None:
+    """
+    Calcula composição de drivers vs anti-drivers a partir de leafs.
+    
+    Retorna estatísticas separadas para cada tipo de direção:
+    - Drivers: count, percentage, avg, max
+    - Anti-drivers: count, percentage, avg, min
+    
+    Returns:
+        {
+            'drivers': {'count': int, 'percentage': float, 'avg': float, 'max': float},
+            'anti_drivers': {'count': int, 'percentage': float, 'avg': float, 'min': float}
+        }
+        ou None se não houver leafs com direção definida
+    """
+    drivers = []
+    anti_drivers = []
+    
+    for node in leaf_nodes:
+        if isinstance(node.metrics, LeafMetrics):
+            if node.metrics.direcao == 'DRIVER':
+                drivers.append(node.metrics.score_nexas)
+            elif node.metrics.direcao == 'ANTI-DRIVER':
+                anti_drivers.append(node.metrics.score_nexas)
+    
+    total = len(drivers) + len(anti_drivers)
+    if total == 0:
+        return None
+    
+    result = {}
+    
+    if drivers:
+        result['drivers'] = {
+            'count': len(drivers),
+            'percentage': round((len(drivers) / total) * 100, 1),
+            'avg': round(sum(drivers) / len(drivers), 1),
+            'max': round(max(drivers), 1)
+        }
+    
+    if anti_drivers:
+        result['anti_drivers'] = {
+            'count': len(anti_drivers),
+            'percentage': round((len(anti_drivers) / total) * 100, 1),
+            'avg': round(sum(anti_drivers) / len(anti_drivers), 1),
+            'min': round(min(anti_drivers), 1)
+        }
+    
+    return result if result else None
+
+
+def _aggregate_metrics(leaf_nodes: list[TreeNode]) -> NodeMetrics:
     """
     Calcula métricas agregadas a partir de nós LEAF.
     
-    Args:
-        leaf_nodes: Lista de nós folha
-        method: "weighted_mean", "mean", "median", "max"
+    MODIFICADO v2.0: Agora inclui composição Driver/Anti-driver
     """
     scores = []
     relevancias = []
@@ -340,115 +393,108 @@ def _aggregate_metrics(leaf_nodes: list[TreeNode], method: str = "weighted_mean"
             scores.append(node.metrics.score_nexas)
             relevancias.append(node.metrics.relevancia)
 
-    if not scores:
-        return NodeMetrics(
-            avg_score=0, avg_relevancia=0, count=0,
-            min_score=0, max_score=0, median_score=0, std_dev=0
-        )
+    # Estatísticas básicas
+    avg_score = sum(scores) / len(scores) if scores else 0
+    min_score = min(scores) if scores else 0
+    max_score = max(scores) if scores else 0
     
-    # Calcular score baseado no método
-    if method == "median":
-        sorted_scores = sorted(scores)
-        mid = len(sorted_scores) // 2
-        avg_score = sorted_scores[mid] if len(sorted_scores) % 2 == 1 else (sorted_scores[mid-1] + sorted_scores[mid]) / 2
-    elif method == "max":
-        avg_score = max(scores)
-    else:  # "weighted_mean" ou "mean"
-        avg_score = sum(scores) / len(scores)
-    
-    # Estatísticas adicionais
-    min_score = min(scores)
-    max_score = max(scores)
-    sorted_scores = sorted(scores)
-    mid = len(sorted_scores) // 2
-    median_score = sorted_scores[mid] if len(sorted_scores) % 2 == 1 else (sorted_scores[mid-1] + sorted_scores[mid]) / 2
+    # Mediana
+    sorted_scores = sorted(scores) if scores else [0]
+    n = len(sorted_scores)
+    median_score = (sorted_scores[n//2] if n % 2 else (sorted_scores[n//2-1] + sorted_scores[n//2])/2)
     
     # Desvio padrão
-    mean_val = sum(scores) / len(scores)
-    variance = sum((x - mean_val) ** 2 for x in scores) / len(scores)
-    std_dev = variance ** 0.5
+    if len(scores) > 1:
+        variance = sum((x - avg_score) ** 2 for x in scores) / len(scores)
+        std_dev = variance ** 0.5
+    else:
+        std_dev = 0
+    
+    # NOVO: Composição Driver/Anti-driver
+    composition = _calculate_composition(leaf_nodes)
 
     return NodeMetrics(
         avg_score=avg_score,
-        avg_relevancia=sum(relevancias) / len(relevancias) if relevancias else 0,
-        count=len(scores),
         min_score=min_score,
         max_score=max_score,
         median_score=median_score,
         std_dev=std_dev,
+        avg_relevancia=sum(relevancias) / len(relevancias) if relevancias else 0,
+        count=len(scores),
+        composition=composition,
     )
 
 
-def _aggregate_metrics_from_nodes(child_nodes: list[TreeNode], method: str = "weighted_mean") -> NodeMetrics:
+def _aggregate_metrics_from_nodes(child_nodes: list[TreeNode]) -> NodeMetrics:
     """
-    Calcula métricas agregadas a partir de nós INTERNOS.
+    Calcula métricas agregadas a partir de nós INTERNOS (que já têm métricas).
     
-    Args:
-        child_nodes: Lista de nós filhos
-        method: "weighted_mean", "mean", "median", "max"
+    MODIFICADO v2.0: Propaga composição dos filhos para o pai
     """
     scores = []
     relevancias = []
-    weights = []
     total_count = 0
-    all_min = []
-    all_max = []
-
+    all_min_scores = []
+    all_max_scores = []
+    
+    # Coletar todos os leafs descendentes para composição
+    all_leaf_nodes = []
+    
+    def collect_leaves(node: TreeNode):
+        if node.leaf:
+            all_leaf_nodes.append(node)
+        elif node.children:
+            for child in node.children:
+                collect_leaves(child)
+    
     for node in child_nodes:
+        collect_leaves(node)
+        
         if isinstance(node.metrics, NodeMetrics):
             scores.append(node.metrics.avg_score)
             relevancias.append(node.metrics.avg_relevancia)
-            weights.append(node.metrics.count)
             total_count += node.metrics.count
-            all_min.append(node.metrics.min_score)
-            all_max.append(node.metrics.max_score)
+            if hasattr(node.metrics, 'min_score') and node.metrics.min_score is not None:
+                all_min_scores.append(node.metrics.min_score)
+            if hasattr(node.metrics, 'max_score') and node.metrics.max_score is not None:
+                all_max_scores.append(node.metrics.max_score)
         elif isinstance(node.metrics, LeafMetrics):
             scores.append(node.metrics.score_nexas)
             relevancias.append(node.metrics.relevancia)
-            weights.append(1)
             total_count += 1
-            all_min.append(node.metrics.score_nexas)
-            all_max.append(node.metrics.score_nexas)
+            all_min_scores.append(node.metrics.score_nexas)
+            all_max_scores.append(node.metrics.score_nexas)
 
-    if not scores:
-        return NodeMetrics(
-            avg_score=0, avg_relevancia=0, count=0,
-            min_score=0, max_score=0, median_score=0, std_dev=0
-        )
+    avg_score = sum(scores) / len(scores) if scores else 0
+    min_score = min(all_min_scores) if all_min_scores else 0
+    max_score = max(all_max_scores) if all_max_scores else 0
     
-    # Calcular score baseado no método
-    if method == "weighted_mean":
-        avg_score = sum(s * w for s, w in zip(scores, weights)) / sum(weights) if sum(weights) > 0 else 0
-    elif method == "median":
-        sorted_scores = sorted(scores)
-        mid = len(sorted_scores) // 2
-        avg_score = sorted_scores[mid] if len(sorted_scores) % 2 == 1 else (sorted_scores[mid-1] + sorted_scores[mid]) / 2
-    elif method == "max":
-        avg_score = max(scores)
-    else:  # "mean"
-        avg_score = sum(scores) / len(scores)
+    # Mediana dos scores médios
+    sorted_scores = sorted(scores) if scores else [0]
+    n = len(sorted_scores)
+    median_score = (sorted_scores[n//2] if n % 2 else (sorted_scores[n//2-1] + sorted_scores[n//2])/2)
     
-    # Estatísticas adicionais
-    min_score = min(all_min) if all_min else 0
-    max_score = max(all_max) if all_max else 0
-    sorted_scores = sorted(scores)
-    mid = len(sorted_scores) // 2
-    median_score = sorted_scores[mid] if len(sorted_scores) % 2 == 1 else (sorted_scores[mid-1] + sorted_scores[mid]) / 2
+    # Desvio padrão dos scores médios
+    if len(scores) > 1:
+        variance = sum((x - avg_score) ** 2 for x in scores) / len(scores)
+        std_dev = variance ** 0.5
+    else:
+        std_dev = 0
     
-    # Desvio padrão
-    mean_val = sum(scores) / len(scores)
-    variance = sum((x - mean_val) ** 2 for x in scores) / len(scores)
-    std_dev = variance ** 0.5
+    # Calcular composição a partir de TODOS os leafs descendentes
+    composition = _calculate_composition(all_leaf_nodes) if all_leaf_nodes else None
 
     return NodeMetrics(
         avg_score=avg_score,
-        avg_relevancia=sum(relevancias) / len(relevancias) if relevancias else 0,
-        count=total_count,
         min_score=min_score,
         max_score=max_score,
         median_score=median_score,
         std_dev=std_dev,
+        avg_relevancia=sum(relevancias) / len(relevancias) if relevancias else 0,
+        count=total_count,
+        composition=composition,
     )
+
 
 def _sum_values(nodes: list[TreeNode]) -> float:
     """Soma os values dos filhos (usado para tamanho do arco no sunburst)."""
